@@ -2,12 +2,13 @@
 
 LinkedIn AI Autopilot is an AI-assisted workspace for planning, creating, reviewing, scheduling,
 publishing, and analyzing LinkedIn content. Development follows an incremental milestone plan; the
-current repository contains the Phase 1 application foundation.
+current repository contains the Phase 2 application and database foundation.
 
 ## Current scope
 
 - React and TypeScript frontend with routing, query management, Tailwind CSS, and a dashboard shell
 - FastAPI backend with versioned routing, environment-based settings, structured logging, and health check
+- SQLAlchemy 2 domain models, user-scoped repositories, and Alembic migrations
 - Test, lint, and type-check tooling for both applications
 - Docker Compose topology for the frontend, backend, PostgreSQL, and Redis
 
@@ -38,7 +39,7 @@ by feature. See [docs/architecture.md](docs/architecture.md) for the architectur
 ## Configuration
 
 Copy `.env.example` to `.env` and replace development placeholders where required. Never commit `.env`.
-Phase 1 needs no real external-service credentials.
+Phases 1 and 2 need no real external-service credentials.
 
 ## Frontend development
 
@@ -87,8 +88,15 @@ include placeholder workers.
 
 ## Database migrations
 
-SQLAlchemy models and the Alembic migration environment are created in Phase 2. Schema changes must be
-made through Alembic migrations after that phase.
+From the `backend` directory, apply the current schema with:
+
+```powershell
+uv run alembic upgrade head
+```
+
+Create future migrations with `uv run alembic revision --autogenerate -m "description"`. Review every
+generated revision and verify its upgrade and downgrade paths. See
+[docs/database.md](docs/database.md) for the schema conventions.
 
 ## LinkedIn developer setup
 
@@ -110,7 +118,6 @@ Phase 24.
 ## Known limitations
 
 - The dashboard is an application shell; feature screens arrive in later phases.
-- Database entities and migrations begin in Phase 2.
-- Authentication begins in Phase 3.
+- Authentication begins in Phase 3; user records currently have no public registration or login API.
 - Docker must be installed separately before Compose can be run locally.
 - External APIs are deliberately not called or mocked in production code.
