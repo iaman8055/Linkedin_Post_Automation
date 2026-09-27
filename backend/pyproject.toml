@@ -19,6 +19,7 @@ dependencies = [
     "python-json-logger>=3.3,<4",
     "sqlalchemy>=2.0,<3",
     "uvicorn[standard]>=0.35,<1",
+    "boto3>=1.40,<2",
 ]
 
 [dependency-groups]

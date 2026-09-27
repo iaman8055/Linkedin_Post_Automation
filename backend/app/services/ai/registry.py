@@ -1,5 +1,6 @@
 from app.core.config import Settings
 from app.services.ai.contracts import AIProvider
+from app.services.ai.nvidia_provider import NvidiaProvider
 from app.services.ai.openai_provider import OpenAIProvider
 
 
@@ -25,4 +26,5 @@ class AIProviderRegistry:
 def create_provider_registry(settings: Settings) -> AIProviderRegistry:
     registry = AIProviderRegistry()
     registry.register(OpenAIProvider(settings))
+    registry.register(NvidiaProvider(settings))
     return registry

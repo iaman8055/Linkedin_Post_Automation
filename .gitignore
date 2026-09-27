@@ -30,3 +30,5 @@ Thumbs.db
 # Runtime files
 *.log
 tmp/
+backend/storage/
+storage/

@@ -24,6 +24,8 @@ class GeneratePostsRequest(BaseModel):
     include_hashtags: bool = True
     hashtag_count: int = Field(default=3, ge=0, le=8)
     number_of_posts: int = Field(default=1, ge=1, le=10)
+    writing_profile_id: UUID | None = None
+    research_source_ids: list[UUID] = Field(default_factory=list, max_length=10)
 
     _normalize_topic = field_validator("topic")(normalize_required_text)
     _normalize_subject = field_validator("subject")(normalize_required_text)

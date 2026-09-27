@@ -1,8 +1,9 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.enums import PostStatus, ScheduleStatus
 from app.models.post import Post
@@ -13,6 +14,18 @@ from app.repositories.base import UserOwnedRepository
 class ScheduleRepository(UserOwnedRepository[Schedule]):
     def __init__(self, session: Session) -> None:
         super().__init__(Schedule, session)
+
+    @staticmethod
+    def _response_options() -> tuple[Any, ...]:
+        return (selectinload(Schedule.post).selectinload(Post.publishing_logs),)
+
+    def get_for_user(self, object_id: UUID, user_id: UUID) -> Schedule | None:
+        statement = (
+            select(Schedule)
+            .where(Schedule.id == object_id, Schedule.user_id == user_id)
+            .options(*self._response_options())
+        )
+        return self.session.scalar(statement)
 
     def list_filtered_for_user(
         self,
@@ -35,6 +48,7 @@ class ScheduleRepository(UserOwnedRepository[Schedule]):
         statement = (
             select(Schedule)
             .where(*filters)
+            .options(*self._response_options())
             .order_by(Schedule.scheduled_for, Schedule.created_at)
             .offset(offset)
             .limit(limit)

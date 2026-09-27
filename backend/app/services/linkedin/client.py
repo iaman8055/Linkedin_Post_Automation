@@ -33,6 +33,9 @@ class LinkedInClient:
     token_endpoint = "https://www.linkedin.com/oauth/v2/accessToken"
     userinfo_endpoint = "https://api.linkedin.com/v2/userinfo"
     posts_endpoint = "https://api.linkedin.com/rest/posts"
+    member_post_analytics_endpoint = (
+        "https://api.linkedin.com/rest/memberCreatorPostAnalytics"
+    )
 
     def __init__(self, timeout_seconds: float = 10.0) -> None:
         self.timeout_seconds = timeout_seconds
@@ -146,3 +149,41 @@ class LinkedInClient:
             ) from exc
         except httpx.HTTPError as exc:
             raise LinkedInClientError("LinkedIn post creation failed") from exc
+
+    def get_member_post_metric(
+        self,
+        *,
+        access_token: str,
+        post_urn: str,
+        metric: str,
+        api_version: str,
+    ) -> int:
+        entity_type = "ugc" if ":ugcPost:" in post_urn else "share"
+        try:
+            response = httpx.get(
+                self.member_post_analytics_endpoint,
+                params={
+                    "q": "entity",
+                    "entity": f"({entity_type}:{post_urn})",
+                    "queryType": metric,
+                    "aggregation": "TOTAL",
+                },
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "X-Restli-Protocol-Version": "2.0.0",
+                    "Linkedin-Version": api_version,
+                },
+                timeout=self.timeout_seconds,
+            )
+            response.raise_for_status()
+            payload: dict[str, Any] = response.json()
+            elements = payload.get("elements") or []
+            if not elements:
+                return 0
+            return int(elements[0]["count"])
+        except httpx.HTTPStatusError as exc:
+            raise LinkedInClientError(
+                "LinkedIn analytics request failed", exc.response.status_code
+            ) from exc
+        except (httpx.HTTPError, KeyError, TypeError, ValueError, IndexError) as exc:
+            raise LinkedInClientError("LinkedIn analytics response was invalid") from exc

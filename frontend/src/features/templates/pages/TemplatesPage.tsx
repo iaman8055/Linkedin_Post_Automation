@@ -1,0 +1,27 @@
+import { useDeferredValue, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+
+import { Badge, Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '../../../components/ui/Primitives'
+import { Icon } from '../../../components/ui/Icon'
+import { createTemplate, deleteTemplate, listTemplates, templateAction, templateKeys, updateTemplate, type ContentTemplate, type TemplateInput, type TemplateStatus } from '../api'
+import { TemplateForm } from '../components/TemplateForm'
+import { UseTemplatePanel } from '../components/UseTemplatePanel'
+
+export function TemplatesPage() {
+  const client = useQueryClient(); const [search, setSearch] = useState(''); const deferredSearch = useDeferredValue(search)
+  const [status, setStatus] = useState<TemplateStatus | ''>('ACTIVE'); const [editing, setEditing] = useState<ContentTemplate | null | undefined>(); const [using, setUsing] = useState<ContentTemplate | null>(null)
+  const query = useQuery({ queryKey: [...templateKeys.all, deferredSearch, status], queryFn: () => listTemplates({ search: deferredSearch || undefined, status: status || undefined, limit: 100 }) })
+  const refresh = () => client.invalidateQueries({ queryKey: templateKeys.all })
+  const save = useMutation({ mutationFn: (input: TemplateInput) => editing ? updateTemplate(editing.id, input) : createTemplate(input), onSuccess: async () => { setEditing(undefined); await refresh() } })
+  const transition = useMutation({ mutationFn: ({ id, action }: { id: string; action: 'archive'|'restore' }) => templateAction(id, action), onSuccess: refresh })
+  const remove = useMutation({ mutationFn: deleteTemplate, onSuccess: refresh })
+  const showEditor = editing !== undefined
+
+  return <div className="mx-auto max-w-[1120px]">
+    <PageHeader title="Templates" description="Build reusable structures and turn them into reviewable drafts." action={<Button onClick={() => setEditing(null)}><Icon className="size-4" name="plus"/>New template</Button>}/>
+    <Card className="overflow-hidden"><div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row"><label className="relative flex-1"><span className="sr-only">Search templates</span><Icon className="absolute left-3 top-2.5 size-4 text-slate-400" name="search"/><input className="app-input pl-9" placeholder="Search templates…" value={search} onChange={(event) => setSearch(event.target.value)}/></label><select className="app-input sm:w-40" aria-label="Template status" value={status} onChange={(event) => setStatus(event.target.value as TemplateStatus | '')}><option value="">All statuses</option><option value="ACTIVE">Active</option><option value="ARCHIVED">Archived</option></select></div>
+      {query.isLoading ? <div className="grid gap-3 p-4 md:grid-cols-2"><Skeleton className="h-48"/><Skeleton className="h-48"/></div> : query.isError ? <div className="p-4"><ErrorState message="Templates could not be loaded." retry={() => query.refetch()}/></div> : !query.data?.items.length ? <div className="p-4"><EmptyState title="No templates found" description="Create a reusable post structure with named placeholders." action={<Button onClick={() => setEditing(null)}>Create template</Button>}/></div> : <div className="grid gap-3 p-4 md:grid-cols-2">{query.data.items.map((template) => <article className="rounded-xl border border-slate-200 p-4" key={template.id}><div className="flex items-start justify-between gap-3"><div><h2 className="text-[13px] font-bold">{template.name}</h2><p className="mt-1 line-clamp-2 text-[11px] leading-5 text-slate-500">{template.description || 'No description'}</p></div><Badge tone={template.status === 'ACTIVE' ? 'green' : 'neutral'}>{template.status}</Badge></div><pre className="mt-3 line-clamp-4 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-[10px] leading-5 text-slate-600">{template.body}</pre><div className="mt-3 flex flex-wrap gap-1">{template.placeholders.map((name) => <span className="rounded bg-[#eef1ff] px-1.5 py-1 text-[9px] font-bold text-[#4f5ff7]" key={name}>{name}</span>)}</div><div className="mt-4 flex flex-wrap gap-2">{template.status === 'ACTIVE' && <Button onClick={() => setUsing(template)}>Use</Button>}<Button variant="secondary" onClick={() => setEditing(template)}>Edit</Button><Button variant="secondary" onClick={() => transition.mutate({ id: template.id, action: template.status === 'ACTIVE' ? 'archive' : 'restore' })}>{template.status === 'ACTIVE' ? 'Archive' : 'Restore'}</Button><Button variant="danger" onClick={() => { if (window.confirm(`Delete “${template.name}”?`)) remove.mutate(template.id) }}>Delete</Button></div></article>)}</div>}
+    </Card>
+    {(showEditor || using) && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/30 p-4"><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl"><div className="mb-5 flex items-center justify-between"><h2 className="text-[16px] font-bold">{using ? `Use ${using.name}` : editing ? 'Edit template' : 'New template'}</h2><button aria-label="Close" className="text-xl text-slate-400" onClick={() => { setEditing(undefined); setUsing(null) }}>×</button></div>{using ? <UseTemplatePanel template={using} onClose={() => setUsing(null)}/> : <TemplateForm template={editing ?? null} pending={save.isPending} error={save.error} onCancel={() => setEditing(undefined)} onSubmit={(input) => save.mutate(input)}/>}</div></div>}
+  </div>
+}

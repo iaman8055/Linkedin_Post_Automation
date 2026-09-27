@@ -49,3 +49,19 @@ The worker records a publishing attempt before calling LinkedIn and finalizes th
 
 The calendar exposes **Retry safely** for failures whose publishing log explicitly records a safe outcome.
 `POST /api/v1/schedules/{id}/retry` performs the same ownership, state, uncertainty, and attempt-limit checks.
+
+## Content calendar
+
+The Phase 14 calendar requests only the visible six-week date range and caps each response at 100 records.
+Each schedule response includes the exact user-owned post summary needed for rendering, avoiding a second
+unbounded content-library request. The UI provides:
+
+- Previous, next, and current-month navigation
+- Monday-first six-week month grids
+- Status-colored scheduled, publishing, published, failed, paused, and cancelled posts
+- A selected-day agenda with local display times
+- Open/edit, reschedule, cancel, pause/resume, and safe-retry actions
+- Thirty-second refreshes so worker-driven state changes appear without a page reload
+
+Drag-and-drop rescheduling remains intentionally deferred. Date changes currently use the validated
+rescheduling endpoint, keeping PostgreSQL—not browser state—as the source of truth.

@@ -4,10 +4,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { ApiError } from '../../../services/api/client'
 import { Button, PageHeader, Skeleton } from '../../../components/ui/Primitives'
-import { approvePost, createPost, getPost, postKeys, returnPostToDraft, updatePost } from '../api'
+import { approvePost, checkPostQuality, createPost, getPost, postKeys, returnPostToDraft, updatePost } from '../api'
 import { LinkedInPreview } from '../components/LinkedInPreview'
 import { AIGeneratorForm } from '../components/AIGeneratorForm'
 import { PostEditorForm, type PostFormValues } from '../components/PostEditorForm'
+import { QualityCheckPanel } from '../components/QualityCheckPanel'
+import { PostMediaPanel } from '../components/PostMediaPanel'
 
 const emptyDraft: PostFormValues = { title: '', content: '', language: 'English' }
 
@@ -27,6 +29,7 @@ export function PostEditorPage() {
       return postId ? updatePost(postId, input) : createPost(input)
     },
     onSuccess: async (post) => {
+      quality.reset()
       await queryClient.invalidateQueries({ queryKey: postKeys.all })
       navigate(`/create/${post.id}`, { replace: true })
     },
@@ -35,13 +38,14 @@ export function PostEditorPage() {
     mutationFn: () => postQuery.data?.status === 'APPROVED' ? returnPostToDraft(postId!) : approvePost(postId!),
     onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: postKeys.all }) },
   })
+  const quality = useMutation({ mutationFn: () => checkPostQuality(postId!) })
 
   if (postQuery.isLoading) return <div className="mx-auto max-w-[1120px]"><Skeleton className="h-[500px]"/></div>
   if (postQuery.isError) return <p role="alert" className="text-red-700">This draft could not be loaded.</p>
 
   return (
     <div className="mx-auto max-w-[1120px]">
-      <PageHeader eyebrow={postId ? 'Editor' : 'Create'} title={postId ? 'Edit post' : 'Create a new post'} description={postId ? 'Refine your draft and review how it will appear.' : 'Let AI help you create engaging LinkedIn drafts for your audience.'} action={postId && postQuery.data ? <div className="flex gap-2">{postQuery.data.status === 'DRAFT' && <Button onClick={() => transition.mutate()} disabled={transition.isPending}>Approve</Button>}{postQuery.data.status === 'APPROVED' && <><Button variant="secondary" onClick={() => transition.mutate()} disabled={transition.isPending}>Return to draft</Button><Link className="inline-flex h-9 items-center rounded-lg bg-[#4f5ff7] px-4 text-[13px] font-semibold text-white" to="/calendar">Schedule</Link></>}</div> : undefined}/>
+      <PageHeader eyebrow={postId ? 'Editor' : 'Create'} title={postId ? 'Edit post' : 'Create a new post'} description={postId ? 'Refine your draft and review how it will appear.' : 'Let AI help you create engaging LinkedIn drafts for your audience.'} action={postId && postQuery.data ? <div className="flex gap-2"><Button variant="secondary" onClick={() => quality.mutate()} disabled={quality.isPending}>{quality.isPending ? 'Checking…' : 'Quality check'}</Button>{postQuery.data.status === 'DRAFT' && <Button onClick={() => transition.mutate()} disabled={transition.isPending}>Approve</Button>}{postQuery.data.status === 'APPROVED' && <><Button variant="secondary" onClick={() => transition.mutate()} disabled={transition.isPending}>Return to draft</Button><Link className="inline-flex h-9 items-center rounded-lg bg-[#4f5ff7] px-4 text-[13px] font-semibold text-white" to="/calendar">Schedule</Link></>}</div> : undefined}/>
       {!postId && (
         <div className="mb-5 grid gap-5 xl:grid-cols-[1.25fr_0.75fr]"><AIGeneratorForm
           onGenerated={async (result) => {
@@ -56,7 +60,7 @@ export function PostEditorPage() {
           <PostEditorForm
             defaultValues={values}
             isSaving={save.isPending}
-            onContentChange={setPreviewOverride}
+            onContentChange={(content) => { setPreviewOverride(content); quality.reset() }}
             onSubmit={(form) => save.mutate(form)}
             serverError={save.error instanceof ApiError ? save.error.message : save.isError ? 'The draft could not be saved.' : undefined}
           />
@@ -64,6 +68,9 @@ export function PostEditorPage() {
         <div>
           <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">LinkedIn preview</p>
           <LinkedInPreview content={previewOverride ?? values.content} />
+          {postId && postQuery.data && <PostMediaPanel postId={postId} editable={postQuery.data.status === 'DRAFT'}/>} 
+          {quality.data && <QualityCheckPanel result={quality.data}/>} 
+          {quality.isError && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-[11px] text-red-700" role="alert">{quality.error instanceof ApiError ? quality.error.message : 'The quality check could not be completed.'}</p>}
         </div>
       </div>
     </div>

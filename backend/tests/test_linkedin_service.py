@@ -72,6 +72,7 @@ def linkedin_settings() -> Settings:
         linkedin_client_id="linkedin-client-id",
         linkedin_client_secret="linkedin-client-secret",
         linkedin_token_encryption_key=Fernet.generate_key().decode(),
+        linkedin_oauth_scopes=["openid", "profile", "email", "w_member_social"],
     )
 
 

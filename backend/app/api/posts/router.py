@@ -3,9 +3,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response, status
 
-from app.api.dependencies import CurrentUser, DatabaseSession
+from app.api.dependencies import AppSettings, CurrentUser, DatabaseSession
 from app.models.enums import PostStatus
 from app.schemas.post import PostCreate, PostListResponse, PostResponse, PostUpdate
+from app.schemas.quality import QualityCheckResponse
+from app.services.ai.quality_checker import QualityChecker
+from app.services.ai.registry import AIProviderRegistry, create_provider_registry
 from app.services.posts import PostService
 
 router = APIRouter(prefix="/posts")
@@ -16,6 +19,13 @@ def get_post_service(session: DatabaseSession) -> PostService:
 
 
 PostServiceDependency = Annotated[PostService, Depends(get_post_service)]
+
+
+def get_quality_registry(settings: AppSettings) -> AIProviderRegistry:
+    return create_provider_registry(settings)
+
+
+QualityRegistry = Annotated[AIProviderRegistry, Depends(get_quality_registry)]
 
 
 @router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
@@ -70,3 +80,14 @@ def return_post_to_draft(
     post_id: UUID, user: CurrentUser, service: PostServiceDependency
 ) -> PostResponse:
     return PostResponse.model_validate(service.return_to_draft(user.id, post_id))
+
+
+@router.post("/{post_id}/quality-check", response_model=QualityCheckResponse)
+def quality_check(
+    post_id: UUID,
+    user: CurrentUser,
+    session: DatabaseSession,
+    settings: AppSettings,
+    registry: QualityRegistry,
+) -> QualityCheckResponse:
+    return QualityChecker(session, settings, registry).check(user.id, post_id)

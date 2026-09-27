@@ -47,9 +47,26 @@ class Settings(BaseSettings):
     ai_provider: str | None = None
     ai_model: str | None = None
     ai_api_key: SecretStr | None = None
+    nvidia_api_key: SecretStr | None = None
     ai_request_timeout_seconds: float = Field(default=60.0, gt=0, le=300)
     ai_max_output_tokens: int = Field(default=4000, gt=0, le=100_000)
     openai_base_url: str = "https://api.openai.com/v1"
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
+    research_provider: str | None = None
+    research_api_key: SecretStr | None = None
+    research_request_timeout_seconds: float = Field(default=30.0, gt=0, le=120)
+    tavily_base_url: str = "https://api.tavily.com"
+    storage_provider: str = "local"
+    storage_local_path: str = "./storage"
+    storage_max_image_bytes: int = Field(default=10_485_760, gt=0)
+    storage_max_video_bytes: int = Field(default=52_428_800, gt=0)
+    storage_max_document_bytes: int = Field(default=10_485_760, gt=0)
+    storage_bucket: str | None = None
+    storage_region: str | None = None
+    storage_endpoint: str | None = None
+    storage_access_key: str | None = None
+    storage_secret_key: SecretStr | None = None
+    storage_force_path_style: bool = False
 
     @model_validator(mode="after")
     def reject_insecure_production_secret(self) -> "Settings":
@@ -59,6 +76,8 @@ class Settings(BaseSettings):
             raise ValueError("JWT_SECRET must contain at least 32 characters in production")
         if self.app_env == "production" and self.celery_task_always_eager:
             raise ValueError("CELERY_TASK_ALWAYS_EAGER must be false in production")
+        if self.app_env == "production" and self.storage_provider == "local":
+            raise ValueError("STORAGE_PROVIDER must use managed object storage in production")
         return self
 
     @property

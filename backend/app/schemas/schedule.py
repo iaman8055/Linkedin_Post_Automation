@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models.enums import ScheduleRecurrence, ScheduleStatus
+from app.models.enums import PostStatus, ScheduleRecurrence, ScheduleStatus
 
 
 def validate_schedule_timezone(value: str) -> str:
@@ -80,11 +80,22 @@ class ScheduleUpdate(BaseModel):
     _timezone_aware = field_validator("scheduled_for")(validate_aware_datetime)
 
 
+class ScheduledPostSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    campaign_id: UUID | None
+    title: str | None
+    content: str
+    status: PostStatus
+
+
 class ScheduleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     post_id: UUID
+    post: ScheduledPostSummary
     recurrence: ScheduleRecurrence
     status: ScheduleStatus
     timezone: str

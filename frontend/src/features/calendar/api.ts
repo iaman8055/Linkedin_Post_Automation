@@ -6,6 +6,13 @@ export type ScheduleRecurrence = 'ONCE' | 'DAILY' | 'WEEKDAYS' | 'WEEKLY' | 'CUS
 export type Schedule = {
   id: string
   post_id: string
+  post: {
+    id: string
+    campaign_id: string | null
+    title: string | null
+    content: string
+    status: 'DRAFT' | 'APPROVED' | 'SCHEDULED' | 'PUBLISHING' | 'PUBLISHED' | 'FAILED' | 'CANCELLED'
+  }
   recurrence: ScheduleRecurrence
   status: ScheduleStatus
   timezone: string
@@ -30,8 +37,14 @@ export type CreateScheduleInput = {
   custom_dates?: string[]
 }
 
-export const scheduleKeys = { all: ['schedules'] as const }
-export const listSchedules = () => apiRequest<ScheduleList>('/schedules?limit=100')
+export type ScheduleFilters = { start?: string; end?: string; limit?: number; offset?: number }
+export const scheduleKeys = { all: ['schedules'] as const, month: (start: string) => ['schedules', 'month', start] as const }
+export const listSchedules = (filters: ScheduleFilters = {}) => {
+  const params = new URLSearchParams({ limit: String(filters.limit ?? 100), offset: String(filters.offset ?? 0) })
+  if (filters.start) params.set('start', filters.start)
+  if (filters.end) params.set('end', filters.end)
+  return apiRequest<ScheduleList>(`/schedules?${params}`)
+}
 export const createSchedule = (input: CreateScheduleInput) => apiRequest<Schedule>('/schedules', { method: 'POST', body: JSON.stringify(input) })
 export const updateSchedule = (id: string, input: { scheduled_for: string; timezone: string }) => apiRequest<Schedule>(`/schedules/${id}`, { method: 'PATCH', body: JSON.stringify(input) })
 export const scheduleAction = (id: string, action: 'cancel' | 'pause' | 'resume' | 'retry') => apiRequest<Schedule>(`/schedules/${id}/${action}`, { method: 'POST' })

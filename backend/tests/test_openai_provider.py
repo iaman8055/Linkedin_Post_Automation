@@ -74,5 +74,5 @@ def test_openai_provider_uses_responses_api_without_storage() -> None:
 
 def test_openai_provider_requires_a_key() -> None:
     with pytest.raises(AIProviderError) as error:
-        OpenAIProvider(Settings()).generate(request())
+        OpenAIProvider(Settings(ai_api_key=None)).generate(request())
     assert error.value.code == "OPENAI_NOT_CONFIGURED"

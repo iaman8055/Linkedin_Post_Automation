@@ -35,8 +35,14 @@ export type GeneratePostsInput = {
   include_hashtags: boolean
   hashtag_count: number
   number_of_posts: number
+  writing_profile_id: string | null
+  research_source_ids: string[]
 }
 export type GeneratePostsResult = { job_id: string; posts: Post[] }
+export type QualityIssue = { type: string; severity: 'low' | 'medium' | 'high'; message: string; suggestion: string }
+export type QualityCheck = { post_id: string; status: 'pass' | 'warning' | 'fail'; issues: QualityIssue[]; ai_review_performed: boolean; job_id: string | null }
+export type PostMedia = { id: string; post_id: string; media_type: 'IMAGE' | 'VIDEO' | 'DOCUMENT'; mime_type: string; size_bytes: number | null; position: number; metadata_json: { filename?: string }; created_at: string }
+export type PostMediaList = { items: PostMedia[] }
 
 export const postKeys = { all: ['posts'] as const, detail: (id: string) => ['posts', id] as const }
 
@@ -77,4 +83,23 @@ export function generatePosts(input: GeneratePostsInput) {
     method: 'POST',
     body: JSON.stringify(input),
   })
+}
+
+export function checkPostQuality(id: string) {
+  return apiRequest<QualityCheck>(`/posts/${id}/quality-check`, { method: 'POST' })
+}
+
+export function listPostMedia(postId: string) {
+  return apiRequest<PostMediaList>(`/posts/${postId}/media`)
+}
+
+export function uploadPostMedia(postId: string, file: File) {
+  const params = new URLSearchParams({ filename: file.name })
+  return apiRequest<PostMedia>(`/posts/${postId}/media?${params}`, {
+    method: 'POST', headers: { 'Content-Type': file.type }, body: file,
+  })
+}
+
+export function deletePostMedia(mediaId: string) {
+  return apiRequest<void>(`/media/${mediaId}`, { method: 'DELETE' })
 }

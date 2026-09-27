@@ -21,11 +21,17 @@ The following environment variables are available:
 AI_PROVIDER=
 AI_MODEL=
 AI_API_KEY=
+NVIDIA_API_KEY=
 AI_REQUEST_TIMEOUT_SECONDS=60
 AI_MAX_OUTPUT_TOKENS=4000
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
 ```
 
 Set `AI_PROVIDER=openai`, choose an available model in `AI_MODEL`, and supply the key in `AI_API_KEY`.
+For NVIDIA Nemotron, set `AI_PROVIDER=nvidia`, copy the exact model ID from the NVIDIA API Catalog
+into `AI_MODEL`, and set `NVIDIA_API_KEY`. The default hosted endpoint is
+`https://integrate.api.nvidia.com/v1`; a self-hosted NIM can be selected with `NVIDIA_BASE_URL`.
+`AI_API_KEY` remains a backwards-compatible fallback for the NVIDIA adapter.
 Leaving the provider blank keeps AI execution disabled. The
 authenticated `GET /api/v1/ai/status` endpoint reports configuration and adapter availability without
 returning credentials.
@@ -33,6 +39,11 @@ returning credentials.
 The OpenAI adapter sends `store: false`, uses strict Structured Outputs for generated drafts, applies
 the configured timeout, and normalizes retryable transport and HTTP failures. The API key is sent only
 in the provider authorization header.
+
+The NVIDIA adapter uses the OpenAI-compatible `/chat/completions` API. For structured generation it
+adds the required JSON Schema to the system instructions and disables Nemotron's visible reasoning
+trace so the response body contains only the requested JSON. It normalizes token usage, finish status,
+request IDs, HTTP errors, and transport errors into the same provider-neutral result.
 
 ## Adding a real provider
 
@@ -57,7 +68,7 @@ Future features that persist generated content must do so in the appropriate use
 apply its authorization rules.
 
 Tests use local test doubles and HTTP transports at the provider boundary. They are test-only and are
-not registered in the application. Automated tests never make real OpenAI calls.
+not registered in the application. Automated tests never make real OpenAI or NVIDIA calls.
 
 ## Post generation
 

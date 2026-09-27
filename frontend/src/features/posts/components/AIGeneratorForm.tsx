@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { ApiError } from '../../../services/api/client'
 import { generatePosts, type GeneratePostsResult } from '../api'
+import { listWritingProfiles, writingProfileKeys } from '../../writing-profiles/api'
 
 const generationSchema = z.object({
   topic: z.string().trim().min(2, 'Enter a topic.').max(120),
@@ -17,6 +18,8 @@ const generationSchema = z.object({
   include_hashtags: z.boolean(),
   hashtag_count: z.number().int().min(0).max(8),
   number_of_posts: z.number().int().min(1).max(10),
+  writing_profile_id: z.string().nullable(),
+  research_source_ids: z.array(z.string()),
 })
 
 type GenerationFormValues = z.infer<typeof generationSchema>
@@ -35,7 +38,7 @@ export function AIGeneratorForm({ onGenerated }: AIGeneratorFormProps) {
     defaultValues: {
       topic: '', subject: '', audience: '', tone: 'professional and conversational',
       language: 'English', length: 'medium', call_to_action: '', include_hashtags: true,
-      hashtag_count: 3, number_of_posts: 1,
+      hashtag_count: 3, number_of_posts: 1, writing_profile_id: null, research_source_ids: [],
     },
   })
   const generation = useMutation({
@@ -45,6 +48,7 @@ export function AIGeneratorForm({ onGenerated }: AIGeneratorFormProps) {
     }),
     onSuccess: (result) => onGenerated(result),
   })
+  const profiles = useQuery({ queryKey: writingProfileKeys.all, queryFn: listWritingProfiles })
 
   return (
     <section className="app-card p-5 sm:p-6">
@@ -58,6 +62,7 @@ export function AIGeneratorForm({ onGenerated }: AIGeneratorFormProps) {
         <Field label="Subject" error={errors.subject?.message}><input className={inputClass} {...register('subject')} /></Field>
         <Field label="Audience" error={errors.audience?.message}><input className={inputClass} {...register('audience')} /></Field>
         <Field label="Tone" error={errors.tone?.message}><input className={inputClass} {...register('tone')} /></Field>
+        <Field label="Writing profile" error={errors.writing_profile_id?.message}><select className={inputClass} {...register('writing_profile_id', { setValueAs: (value) => value || null })}><option value="">No profile</option>{profiles.data?.items?.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}{profile.is_default ? ' (default)' : ''}</option>)}</select></Field>
         <Field label="Language" error={errors.language?.message}><input className={inputClass} {...register('language')} /></Field>
         <Field label="Length" error={errors.length?.message}>
           <select className={inputClass} {...register('length')}><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option></select>

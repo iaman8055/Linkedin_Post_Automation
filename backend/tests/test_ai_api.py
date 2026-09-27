@@ -65,7 +65,7 @@ async def test_ai_status_reports_missing_provider_without_faking_one(db_session:
                 "selected_provider": "not-installed",
                 "selected_model": "configured-model",
                 "provider_installed": False,
-                "registered_providers": ["openai"],
+                "registered_providers": ["nvidia", "openai"],
             }
     finally:
         app.dependency_overrides.clear()

@@ -9,11 +9,16 @@ from app.core.config import Settings
 from app.core.errors import ApplicationError
 from app.models.enums import PostStatus
 from app.models.post import Post
+from app.models.research_source import PostResearchSource, ResearchSource
+from app.models.writing_profile import WritingProfile
 from app.repositories.post import PostRepository
+from app.repositories.research_source import ResearchSourceRepository
 from app.schemas.ai import GeneratedDraft, GeneratedDraftCollection, GeneratePostsRequest
 from app.services.ai.contracts import AIGenerationRequest, AIMessage, AIMessageRole
 from app.services.ai.execution import AIExecutionService
 from app.services.ai.registry import AIProviderRegistry
+from app.services.notifications import NotificationService
+from app.services.writing_profiles import WritingProfileService
 
 
 class ContentGenerator:
@@ -22,6 +27,7 @@ class ContentGenerator:
         self.settings = settings
         self.execution = AIExecutionService(session, settings, registry)
         self.posts = PostRepository(session)
+        self.sources = ResearchSourceRepository(session)
 
     def generate_posts(
         self, user_id: UUID, payload: GeneratePostsRequest
@@ -30,11 +36,19 @@ class ContentGenerator:
             raise ApplicationError("AI_MODEL_NOT_CONFIGURED", "AI model is not configured.", 503)
 
         schema = GeneratedDraftCollection.model_json_schema()
+        profile = (
+            WritingProfileService(self.session).get(user_id, payload.writing_profile_id)
+            if payload.writing_profile_id else None
+        )
+        sources = [
+            self._get_source(user_id, source_id)
+            for source_id in payload.research_source_ids
+        ]
         execution = self.execution.execute(
             user_id=user_id,
             job_type="generate_posts",
             request=AIGenerationRequest(
-                messages=self._messages(payload),
+                messages=self._messages(payload, profile, sources),
                 model=self.settings.ai_model,
                 max_output_tokens=self.settings.ai_max_output_tokens,
                 response_schema=schema,
@@ -62,14 +76,44 @@ class ContentGenerator:
             )
 
         posts = [self._build_post(user_id, draft, payload) for draft in generated.posts]
+        for post in posts:
+            for source in sources:
+                self.session.add(PostResearchSource(post_id=post.id, research_source_id=source.id))
+        NotificationService(self.session).create(
+            user_id,
+            event_type="APPROVAL_REQUIRED",
+            title="Drafts ready for review",
+            message=(
+                f"{len(posts)} generated post"
+                f"{'s are' if len(posts) != 1 else ' is'} ready for approval."
+            ),
+            data={"post_ids": [str(post.id) for post in posts]},
+        )
         self.session.commit()
         for post in posts:
             self.session.refresh(post)
         return execution.job.id, posts
 
     @staticmethod
-    def _messages(payload: GeneratePostsRequest) -> list[AIMessage]:
+    def _messages(
+        payload: GeneratePostsRequest,
+        profile: WritingProfile | None = None,
+        sources: list[ResearchSource] | None = None,
+    ) -> list[AIMessage]:
         requirements = payload.model_dump()
+        requirements.pop("writing_profile_id", None)
+        requirements.pop("research_source_ids", None)
+        if profile is not None:
+            requirements["writing_profile"] = WritingProfileService.prompt_guidance(profile)
+        if sources:
+            requirements["research_sources"] = [
+                {
+                    "title": source.title,
+                    "url": source.url,
+                    "content": source.relevant_content,
+                }
+                for source in sources
+            ]
         return [
             AIMessage(
                 role=AIMessageRole.SYSTEM,
@@ -111,6 +155,12 @@ class ContentGenerator:
             status=PostStatus.DRAFT,
             content_fingerprint=sha256(content.encode("utf-8")).hexdigest(),
         )
+
+    def _get_source(self, user_id: UUID, source_id: UUID) -> ResearchSource:
+        source = self.sources.get_for_user(source_id, user_id)
+        if source is None:
+            raise ApplicationError("RESEARCH_SOURCE_NOT_FOUND", "Research source not found.", 404)
+        return source
 
     @staticmethod
     def _normalize_hashtags(hashtags: list[str]) -> list[str]:

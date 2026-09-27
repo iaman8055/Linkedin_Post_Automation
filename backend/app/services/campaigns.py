@@ -13,6 +13,7 @@ from app.repositories.campaign import CampaignRepository
 from app.repositories.post import PostRepository
 from app.repositories.schedule import ScheduleRepository
 from app.schemas.campaign import CampaignCreate, CampaignResponse, CampaignUpdate
+from app.services.notifications import NotificationService
 
 ALLOWED_TRANSITIONS: dict[CampaignStatus, set[CampaignStatus]] = {
     CampaignStatus.DRAFT: {CampaignStatus.ACTIVE, CampaignStatus.CANCELLED},
@@ -93,6 +94,14 @@ class CampaignService:
             )
         campaign.status = target
         self._sync_campaign_schedules(user_id, campaign_id, target)
+        if target == CampaignStatus.COMPLETED:
+            NotificationService(self.session).create(
+                user_id,
+                event_type="CAMPAIGN_COMPLETED",
+                title="Campaign completed",
+                message=f'“{campaign.name}” has been marked complete.',
+                data={"campaign_id": str(campaign.id)},
+            )
         self.session.commit()
         return self.get(user_id, campaign_id)
 

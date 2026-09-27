@@ -4,7 +4,7 @@ The frontend is a React and TypeScript application organized by feature. It uses
 boundaries, TanStack Query for server state, React Hook Form and Zod for validated forms, and a compact
 Tailwind-based visual system inspired by the supplied workspace reference.
 
-## Phase 1-10 routes
+## Implemented routes
 
 - `/login` and `/register`: public authentication screens
 - `/dashboard`: real post, draft, campaign, AI, and LinkedIn connection summaries
@@ -15,7 +15,19 @@ Tailwind-based visual system inspired by the supplied workspace reference.
 - `/settings`: account and provider configuration overview
 - `/settings/linkedin`: connection management and explicitly confirmed test publishing
 - `/settings/linkedin/callback`: browser OAuth callback completion
-- `/calendar`: approved-post scheduling, publishing plan, rescheduling, pause/resume, and cancellation
+- `/calendar`: month navigation, status-coded schedule placement, selected-day agenda, approved-post
+  scheduling, open/edit navigation, rescheduling, pause/resume, safe retry, and cancellation
+- `/templates`: searchable template library, create/edit workflow, archive/restore controls, placeholder
+  rendering, and creation of a real draft post from rendered content
+- `/settings/writing-profiles`: personal voice profiles, default selection, editing, and deletion
+- `/research`: live topic/news research, freshness controls, provider summary, saved source selection,
+  source deletion, and grounded draft creation
+- `/posts/:postId`: includes an advisory quality panel with severity, explanation, and suggestion for
+  every detected issue; editing the draft clears stale results
+- `/posts/:postId`: draft editors also support validated image, MP4, and PDF attachment upload,
+  metadata display, and deletion while clearly labelling LinkedIn publication as text-only
+- `/analytics`: permission status, published-post collection controls, latest lifetime snapshots,
+  aggregate metric cards, and post-level performance without placeholder values
 
 All application routes are protected by the authentication boundary. Access tokens are kept in session
 storage, refresh tokens in local storage, and one refresh attempt is made after an unauthorized API
@@ -30,5 +42,5 @@ drawer.
 
 ## Data policy
 
-Screens use the real `/api/v1` contracts implemented through Phase 10. Later-phase routes render polished
+Screens use the real `/api/v1` contracts implemented through Phase 20. Later-phase routes render polished
 unavailable states instead of mock analytics, notifications, or other invented production data.

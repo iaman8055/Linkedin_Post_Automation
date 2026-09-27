@@ -9,6 +9,7 @@ from app.services.ai.contracts import (
     AIUsage,
 )
 from app.services.ai.execution import AIExecutionService
+from app.services.ai.nvidia_provider import NvidiaProvider
 from app.services.ai.openai_provider import OpenAIProvider
 from app.services.ai.registry import AIProviderRegistry
 
@@ -21,5 +22,6 @@ __all__ = [
     "AIProviderError",
     "AIProviderRegistry",
     "AIUsage",
+    "NvidiaProvider",
     "OpenAIProvider",
 ]

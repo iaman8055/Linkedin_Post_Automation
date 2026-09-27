@@ -15,9 +15,9 @@ services:
     env_file: .env
     ports:
       - "8000:8000"
+    volumes:
+      - media_data:/app/storage
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -32,8 +32,6 @@ services:
     env_file: .env
     command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=publishing", "--hostname=publishing@%h"]
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -43,8 +41,6 @@ services:
     env_file: .env
     command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=ai", "--hostname=ai@%h"]
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -54,8 +50,6 @@ services:
     env_file: .env
     command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=default,research,analytics,notifications", "--hostname=background@%h"]
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -65,12 +59,11 @@ services:
     env_file: .env
     command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "beat", "--loglevel=INFO", "--schedule=/tmp/celerybeat-schedule"]
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
 
   postgres:
+    profiles: ["local-database"]
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: linkedin_autopilot
@@ -101,3 +94,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  media_data:

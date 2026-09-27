@@ -2,8 +2,8 @@
 
 LinkedIn AI Autopilot is an AI-assisted workspace for planning, creating, reviewing, scheduling,
 publishing, and analyzing LinkedIn content. Development follows an incremental milestone plan; the
-current repository contains the Phase 13 foundation, including AI draft generation, campaigns,
-scheduling, automatic text-only LinkedIn publishing, and safe retry/recovery controls.
+current repository contains the Phase 20 foundation, including AI draft generation, campaigns,
+publishing, research, quality checks, media, and permission-gated LinkedIn analytics.
 
 ## Current scope
 
@@ -24,10 +24,23 @@ scheduling, automatic text-only LinkedIn publishing, and safe retry/recovery con
 - Celery Beat with a real hourly expired-auth-token cleanup task
 - Minute-based due-schedule dispatch with PostgreSQL row locking and automatic LinkedIn publication
 - Exponential rate-limit retries, explicit safe retries, attempt limits, and stale-worker recovery
+- Month calendar, status-coded post placement, selected-day agenda, and schedule management controls
+- User-owned reusable templates with validated placeholders, archive/restore, preview rendering, and
+  draft creation from rendered content
+- Personal writing profiles with default-profile management and optional AI-generation guidance for
+  tone, sentence style, language, emoji use, paragraph length, technical depth, CTAs, and vocabulary
+- Provider-neutral research with a real Tavily adapter, freshness filters, attributable source storage,
+  a saved-source library, provider summaries, and source-grounded AI draft creation
+- Non-destructive quality checks for repetition, hashtags, emoji use, formatting, length, duplicates,
+  grammar, unsupported claims, and potentially misleading claims
+- User-uploaded image, MP4, and PDF attachments with signature validation, bounded file sizes,
+  authenticated retrieval, metadata-only database records, and pluggable binary storage
+- LinkedIn member-post analytics snapshots for impressions, reactions, comments, reshares, and derived
+  engagement rate, available only with the restricted Community Management permission
 - Test, lint, and type-check tooling for both applications
 - Docker Compose topology for the frontend, backend, PostgreSQL, and Redis
 
-No external API is simulated in production code. Concrete AI, research, analytics, and automated
+No external API is simulated in production code. Concrete AI, research, and automated
 publishing integrations are added in their scheduled phases after provider requirements are verified.
 
 ## Architecture
@@ -65,10 +78,10 @@ pnpm dev
 
 The frontend is available at `http://localhost:5173`.
 
-Implemented screens cover the complete Phase 1-13 backend surface: sign in and registration, dashboard,
+Implemented screens cover the complete Phase 1-20 backend surface: sign in and registration, dashboard,
 post library and editor, AI-assisted draft generation, campaigns and campaign detail, LinkedIn connection
-and OAuth callback handling, LinkedIn test publishing, and settings. Routes belonging to later phases are
-visible as explicit unavailable states and never display fabricated production data.
+and OAuth callback handling, LinkedIn test publishing, templates, writing profiles, research, quality checks, media attachments, analytics, and settings. Routes belonging to later
+phases are visible as explicit unavailable states and never display fabricated production data.
 
 ## Backend development
 
@@ -127,9 +140,9 @@ versioned Posts API and requires the Share on LinkedIn product. See
 
 ## AI provider setup
 
-The provider-neutral layer includes a verified OpenAI Responses API adapter, strict structured output,
-safe `AIJob` tracking, and multi-post draft generation. AI remains disabled until `AI_PROVIDER=openai`,
-`AI_MODEL`, and `AI_API_KEY` are configured. See
+The provider-neutral layer includes OpenAI and NVIDIA Nemotron adapters, structured output,
+safe `AIJob` tracking, and multi-post draft generation. For Nemotron, configure `AI_PROVIDER=nvidia`,
+`AI_MODEL`, and `NVIDIA_API_KEY`. See
 [docs/ai-provider.md](docs/ai-provider.md) for the integration contract and data-handling rules.
 
 ## Authentication
@@ -156,6 +169,45 @@ Approved posts can be planned at `/calendar`. Schedule timestamps are normalized
 requested IANA timezone is retained for display and future recurrence calculation. The API is under
 `/api/v1/schedules`; see [docs/scheduling.md](docs/scheduling.md) for lifecycle and worker boundaries.
 
+## Templates
+
+Authenticated users can create reusable post structures at `/templates`, insert named placeholders such
+as `{{topic}}`, preview rendered content, and create a real draft from the result. Templates can be
+archived without losing their history. See [docs/templates.md](docs/templates.md) for syntax, lifecycle,
+validation, and API behavior.
+
+## Writing profiles
+
+Users can manage personal style profiles from `/settings/writing-profiles` and optionally select one
+when generating AI drafts. The backend resolves profiles by the authenticated owner and injects only
+bounded style data into the generation requirements. See
+[docs/writing-profiles.md](docs/writing-profiles.md) for lifecycle and API details.
+
+## Research provider setup
+
+The research workspace at `/research` uses Tavily only when `RESEARCH_PROVIDER=tavily` and
+`RESEARCH_API_KEY` are configured. Searches persist the real returned URLs and snippets; selected
+sources can ground a generated draft and remain linked to it. See [docs/research.md](docs/research.md).
+
+## Quality checker
+
+Saved posts expose an advisory quality check from the editor. Structural checks always run locally;
+grammar and claim review are added when the configured AI provider is available. Results never alter
+post content automatically. See [docs/quality-checker.md](docs/quality-checker.md).
+
+## Media
+
+Draft posts accept validated image, MP4 video, and PDF attachments. Development stores binary files in
+an ignored local directory or Docker volume while PostgreSQL contains metadata only. Production rejects
+local storage and includes an S3-compatible adapter for managed object storage. See
+[docs/media.md](docs/media.md).
+
+## Analytics
+
+The analytics workspace stores only metrics returned by LinkedIn for the user's own published posts.
+Collection requires Community Management API approval and `r_member_postAnalytics`; unavailable values
+remain absent. See [docs/analytics.md](docs/analytics.md).
+
 ## Deployment notes
 
 The current containers support local development. Production deployment hardening, secret injection,
@@ -164,11 +216,12 @@ Phase 24.
 
 ## Known limitations
 
-- Templates, research, analytics, insights, and notifications remain unavailable
+- Performance insights and notifications remain unavailable
   until their backend phases are implemented. Their frontend routes state that limitation explicitly.
 - Transactional email delivery and Redis-backed authentication rate limiting are not configured yet.
 - LinkedIn connection requires real Developer Portal credentials and an approved OpenID Connect product.
-- LinkedIn publishing is text-only. Media support arrives in Phase 19.
+- LinkedIn publishing remains text-only. Phase 19 stores and manages attachments but does not claim
+  access to LinkedIn's separate media-upload APIs or permissions.
 - Network or server outcomes that may have reached LinkedIn are deliberately marked uncertain and cannot
   be retried automatically, because the available member permissions do not guarantee reconciliation.
 - AI generation requires a real OpenAI API key and access to the configured model; automated tests use only local provider boundaries.

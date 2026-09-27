@@ -9,8 +9,8 @@ schedules, jobs, and authentication records; Redis carries transient task messag
 | --- | --- |
 | `publishing` | Due-schedule claiming and automatic text-only LinkedIn publishing |
 | `ai` | Real AI draft generation through the configured provider |
-| `research` | Reserved for the Phase 17 research integration |
-| `analytics` | Reserved for Phase 20 analytics collection |
+| `research` | Live provider research and attributable source persistence |
+| `analytics` | Permission-gated LinkedIn post metric collection |
 | `notifications` | Reserved for Phase 22 notification delivery |
 | `default` | Internal maintenance tasks |
 
@@ -54,6 +54,6 @@ uv run celery -A workers.celery_app:celery_app beat --loglevel=INFO
 - `PUBLISHING_RETRY_BASE_SECONDS` and `PUBLISHING_RETRY_MAX_SECONDS` bound exponential backoff.
 - `PUBLISHING_STALE_CLAIM_MINUTES` defaults to `15`.
 
-The research, analytics, and notification modules document their phase boundaries but register no fake
-provider tasks. Automatic publishing calls LinkedIn's real Posts API only when a due schedule and a valid,
+The analytics and notification modules document their phase boundaries but register no fake provider
+tasks. Research calls the configured real provider, and automatic publishing calls LinkedIn's real Posts API only when a due schedule and a valid,
 permissioned LinkedIn account are present.

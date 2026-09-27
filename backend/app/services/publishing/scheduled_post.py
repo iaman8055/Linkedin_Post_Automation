@@ -1,7 +1,6 @@
 import hashlib
 import logging
 from datetime import UTC, datetime, timedelta
-from urllib.parse import unquote_plus
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -16,7 +15,9 @@ from app.repositories.linkedin_account import LinkedInAccountRepository
 from app.repositories.publishing_log import PublishingLogRepository
 from app.repositories.schedule import ScheduleRepository
 from app.services.linkedin.client import LinkedInClient, LinkedInClientError
+from app.services.linkedin.scopes import parse_linkedin_scopes
 from app.services.linkedin.token_cipher import TokenCipher, TokenCipherError
+from app.services.notifications import NotificationService
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,13 @@ class ScheduledPostPublisher:
 
         publish_log.status = PublishingStatus.SUCCEEDED
         publish_log.external_post_id = external_post_id
+        NotificationService(self.session).create(
+            schedule.user_id,
+            event_type="POST_PUBLISHED",
+            title="Post published",
+            message="Your scheduled LinkedIn post was published successfully.",
+            data={"post_id": str(post.id), "schedule_id": str(schedule.id)},
+        )
         self._complete(schedule, external_post_id)
         logger.info(
             "scheduled_linkedin_post_published",
@@ -132,7 +140,7 @@ class ScheduledPostPublisher:
                 raise ApplicationError(
                     "LINKEDIN_TOKEN_EXPIRED", "Reconnect the LinkedIn account.", 409
                 )
-        if self.required_scope not in set(unquote_plus(account.scopes).split()):
+        if self.required_scope not in parse_linkedin_scopes(account.scopes):
             raise ApplicationError(
                 "LINKEDIN_SCOPE_MISSING",
                 "Reconnect LinkedIn after enabling the Share on LinkedIn product.",
@@ -202,6 +210,16 @@ class ScheduledPostPublisher:
             "automatic_retry_scheduled": will_retry,
             "outcome_uncertain": not retry_safe,
         }
+        NotificationService(self.session).create(
+            schedule.user_id,
+            event_type="POST_RETRY_SCHEDULED" if will_retry else "POST_FAILED",
+            title="Publishing retry scheduled" if will_retry else "Post publishing failed",
+            message=(
+                "LinkedIn temporarily rejected the post; another attempt is scheduled."
+                if will_retry else "The scheduled LinkedIn post could not be published."
+            ),
+            data={"post_id": str(schedule.post_id), "schedule_id": str(schedule.id), "code": code},
+        )
         self.session.commit()
         logger.warning(
             "scheduled_linkedin_post_failed",

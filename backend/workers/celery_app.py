@@ -26,7 +26,9 @@ celery_app = Celery(
     redis_backend_use_ssl=tls_options,
     include=[
         "workers.ai_tasks",
+        "workers.analytics_tasks",
         "workers.publishing_tasks",
+        "workers.research_tasks",
         "workers.system_tasks",
     ],
 )

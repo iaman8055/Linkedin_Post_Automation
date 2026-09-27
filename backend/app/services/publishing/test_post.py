@@ -1,7 +1,6 @@
 import hashlib
 import logging
 from datetime import UTC, datetime
-from urllib.parse import unquote_plus
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -16,7 +15,9 @@ from app.repositories.linkedin_account import LinkedInAccountRepository
 from app.repositories.post import PostRepository
 from app.repositories.publishing_log import PublishingLogRepository
 from app.services.linkedin.client import LinkedInClient, LinkedInClientError
+from app.services.linkedin.scopes import parse_linkedin_scopes
 from app.services.linkedin.token_cipher import TokenCipher, TokenCipherError
+from app.services.notifications import NotificationService
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class TestPostPublisher:
             raise ApplicationError(
                 "LINKEDIN_TOKEN_EXPIRED", "Reconnect the LinkedIn account.", 409
             )
-        if self.required_scope not in self._parse_scopes(account.scopes):
+        if self.required_scope not in parse_linkedin_scopes(account.scopes):
             raise ApplicationError(
                 "LINKEDIN_SCOPE_MISSING",
                 "Reconnect LinkedIn after enabling the Share on LinkedIn product.",
@@ -116,6 +117,13 @@ class TestPostPublisher:
         post.published_at = now
         publish_log.status = PublishingStatus.SUCCEEDED
         publish_log.external_post_id = external_post_id
+        NotificationService(self.session).create(
+            user_id,
+            event_type="POST_PUBLISHED",
+            title="Post published",
+            message="Your LinkedIn test post was published successfully.",
+            data={"post_id": str(post.id)},
+        )
         self.session.commit()
         logger.info(
             "linkedin_test_post_published",
@@ -139,6 +147,20 @@ class TestPostPublisher:
         if error.status_code == 401:
             account.is_connected = False
             logger.warning("linkedin_token_rejected", extra={"user_id": str(post.user_id)})
+            NotificationService(self.session).create(
+                post.user_id,
+                event_type="LINKEDIN_CONNECTION_ISSUE",
+                title="Reconnect LinkedIn",
+                message="LinkedIn rejected the stored access token. Reconnect before publishing.",
+                data={"account_id": str(account.id)},
+            )
+        NotificationService(self.session).create(
+            post.user_id,
+            event_type="POST_FAILED",
+            title="Post publishing failed",
+            message="The LinkedIn test post could not be published.",
+            data={"post_id": str(post.id)},
+        )
         self.session.commit()
 
     @staticmethod
@@ -160,10 +182,6 @@ class TestPostPublisher:
         return ApplicationError(
             "LINKEDIN_PUBLISH_FAILED", "Unable to publish the LinkedIn post.", 502
         )
-
-    @staticmethod
-    def _parse_scopes(value: str) -> set[str]:
-        return set(unquote_plus(value).split())
 
     @staticmethod
     def _is_expired(value: datetime) -> bool:

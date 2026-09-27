@@ -61,3 +61,14 @@ class PostRepository(UserOwnedRepository[Post]):
             list(self.session.scalars(statement)),
             self.session.scalar(count_statement) or 0,
         )
+
+    def find_duplicate(
+        self, user_id: UUID, fingerprint: str, *, exclude_id: UUID
+    ) -> Post | None:
+        return self.session.scalar(
+            select(Post).where(
+                Post.user_id == user_id,
+                Post.content_fingerprint == fingerprint,
+                Post.id != exclude_id,
+            )
+        )

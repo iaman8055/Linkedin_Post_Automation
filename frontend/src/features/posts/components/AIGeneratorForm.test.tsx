@@ -12,9 +12,12 @@ it('submits generation requirements and returns drafts for review', async () => 
     job_id: 'job-1',
     posts: [{ id: 'post-1', title: 'Generated', content: 'Draft', status: 'DRAFT' }],
   }
-  const fetchMock = vi.spyOn(window, 'fetch').mockResolvedValue(
-    new Response(JSON.stringify(response), { status: 200, headers: { 'Content-Type': 'application/json' } }),
-  )
+  const fetchMock = vi.spyOn(window, 'fetch').mockImplementation((input) => {
+    const body = String(input).includes('/writing-profiles') ? { items: [], total: 0 } : response
+    return Promise.resolve(
+      new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    )
+  })
   const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
