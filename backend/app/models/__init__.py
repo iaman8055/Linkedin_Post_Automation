@@ -5,6 +5,7 @@ Importing this package registers all tables on ``Base.metadata`` for migrations.
 
 from app.models.ai_job import AIJob
 from app.models.audit_log import AuditLog
+from app.models.auth_token import AuthToken
 from app.models.base import Base
 from app.models.campaign import Campaign
 from app.models.content_idea import ContentIdea
@@ -25,6 +26,7 @@ from app.models.writing_profile import WritingProfile
 __all__ = [
     "AIJob",
     "AuditLog",
+    "AuthToken",
     "Base",
     "Campaign",
     "ContentIdea",

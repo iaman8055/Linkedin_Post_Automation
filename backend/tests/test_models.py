@@ -11,6 +11,7 @@ def test_initial_schema_registers_expected_tables() -> None:
     expected_tables = {
         "ai_jobs",
         "audit_logs",
+        "auth_tokens",
         "campaigns",
         "content_ideas",
         "hashtags",
@@ -53,4 +54,3 @@ def test_user_campaign_and_post_relationships(db_session: Session) -> None:
     assert inspect(post).persistent
     assert post.created_at.tzinfo is not None or isinstance(post.created_at, datetime)
     assert post.created_at.replace(tzinfo=UTC).utcoffset() == UTC.utcoffset(None)
-

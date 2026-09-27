@@ -1,30 +1,31 @@
-const cards = [
-  { label: 'Scheduled posts', value: '0', detail: 'Nothing queued yet' },
-  { label: 'Draft posts', value: '0', detail: 'Start with a new idea' },
-  { label: 'Active campaigns', value: '0', detail: 'Campaigns arrive in Phase 9' },
-]
+import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+
+import { Icon } from '../../../components/ui/Icon'
+import { Badge, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '../../../components/ui/Primitives'
+import { useAuth } from '../../auth/AuthProvider'
+import { campaignKeys, listCampaigns } from '../../campaigns/api'
+import { getLinkedInStatus, linkedinKeys } from '../../linkedin/api'
+import { listPosts, postKeys, type PostStatus } from '../../posts/api'
+
+const statusTone: Record<PostStatus, 'neutral' | 'blue' | 'green' | 'amber' | 'red'> = { DRAFT: 'amber', APPROVED: 'blue', SCHEDULED: 'blue', PUBLISHING: 'blue', PUBLISHED: 'green', FAILED: 'red', CANCELLED: 'neutral' }
 
 export function DashboardPage() {
-  return (
-    <div className="mx-auto max-w-6xl">
-      <header className="mb-8">
-        <p className="text-sm font-semibold text-sky-700">Overview</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">Your content workspace</h1>
-        <p className="mt-3 max-w-2xl text-slate-600">
-          The application foundation is ready. Content workflows will be introduced milestone by milestone.
-        </p>
-      </header>
-
-      <section aria-label="Content summary" className="grid gap-4 md:grid-cols-3">
-        {cards.map((card) => (
-          <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" key={card.label}>
-            <p className="text-sm font-medium text-slate-500">{card.label}</p>
-            <p className="mt-3 text-3xl font-bold">{card.value}</p>
-            <p className="mt-2 text-sm text-slate-500">{card.detail}</p>
-          </article>
-        ))}
-      </section>
-    </div>
-  )
+  const { user } = useAuth()
+  const posts = useQuery({ queryKey: [...postKeys.all, 'dashboard'], queryFn: () => listPosts({ limit: 5 }) })
+  const drafts = useQuery({ queryKey: [...postKeys.all, 'dashboard-drafts'], queryFn: () => listPosts({ status: 'DRAFT', limit: 1 }) })
+  const campaigns = useQuery({ queryKey: [...campaignKeys.all, 'dashboard'], queryFn: () => listCampaigns({ limit: 4 }) })
+  const linkedin = useQuery({ queryKey: linkedinKeys.status, queryFn: getLinkedInStatus })
+  const isLoading = posts.isLoading || drafts.isLoading || campaigns.isLoading
+  const hasError = posts.isError || drafts.isError || campaigns.isError
+  const activeCampaigns = campaigns.data?.items.filter((item) => item.status === 'ACTIVE').length ?? 0
+  const connected = linkedin.data?.accounts.some((account) => account.is_connected) ?? false
+  const firstName = user?.display_name.split(' ')[0] ?? 'there'
+  return <div className="mx-auto max-w-[1120px]"><PageHeader description="Here’s what’s happening with your LinkedIn content today." title={`Good morning, ${firstName} 👋`}/>{hasError && <ErrorState message="Some workspace data could not be loaded." retry={() => { void posts.refetch(); void campaigns.refetch(); void drafts.refetch() }}/>}<section aria-label="Workspace summary" className="grid grid-cols-2 gap-3 lg:grid-cols-4">{isLoading ? Array.from({ length: 4 }, (_, index) => <Skeleton className="h-[105px]" key={index}/>) : <><StatCard label="Total posts" value={posts.data?.total ?? 0} detail="All content"/><StatCard label="Draft posts" value={drafts.data?.total ?? 0} detail="Ready for review"/><StatCard label="Active campaigns" value={activeCampaigns} detail={`${campaigns.data?.total ?? 0} total`}/><StatCard label="LinkedIn" value={connected ? 'Connected' : 'Not connected'} detail={connected ? 'Publishing available' : 'Setup required'} compact/></>}</section>
+    <Card className="mt-4 p-4"><h2 className="text-[13px] font-bold">Quick actions</h2><div className="mt-3 grid gap-3 sm:grid-cols-3"><QuickAction icon="create" label="Create post" detail="Write or generate with AI" to="/create"/><QuickAction icon="campaigns" label="Create campaign" detail="Plan a series of posts" to="/campaigns"/><QuickAction icon="link" label={connected ? 'LinkedIn settings' : 'Connect LinkedIn'} detail="Manage publishing access" to="/settings/linkedin"/></div></Card>
+    <div className="mt-4 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]"><Card className="p-4"><div className="flex items-center justify-between"><h2 className="text-[13px] font-bold">Recent posts</h2><Link className="text-[11px] font-bold text-[#4f5ff7]" to="/posts">View all</Link></div><div className="mt-3">{posts.isLoading ? <Skeleton className="h-48"/> : posts.data?.items.length ? posts.data.items.map((post) => <Link className="flex items-center gap-3 border-t border-slate-100 py-3 first:border-0" key={post.id} to={`/posts/${post.id}`}><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#eef1ff] text-[#4f5ff7]"><Icon className="size-4" name="posts"/></span><div className="min-w-0 flex-1"><p className="truncate text-xs font-bold">{post.title || post.content.slice(0, 52)}</p><p className="mt-1 text-[10px] text-slate-400">Updated {formatDate(post.updated_at)}</p></div><Badge tone={statusTone[post.status]}>{post.status}</Badge></Link>) : <EmptyState description="Create a draft to start your content library." title="No posts yet"/>}</div></Card><Card className="p-4"><div className="flex items-center justify-between"><h2 className="text-[13px] font-bold">Campaigns</h2><Link className="text-[11px] font-bold text-[#4f5ff7]" to="/campaigns">View all</Link></div><div className="mt-3">{campaigns.isLoading ? <Skeleton className="h-48"/> : campaigns.data?.items.length ? campaigns.data.items.map((campaign) => <Link className="block border-t border-slate-100 py-3 first:border-0" key={campaign.id} to={`/campaigns/${campaign.id}`}><div className="flex items-center justify-between gap-3"><p className="truncate text-xs font-bold">{campaign.name}</p><Badge tone={campaign.status === 'ACTIVE' ? 'green' : campaign.status === 'PAUSED' ? 'amber' : 'neutral'}>{campaign.status}</Badge></div><p className="mt-1 text-[10px] text-slate-400">{campaign.topic} · {campaign.post_count} posts</p></Link>) : <EmptyState description="Group related posts into a campaign." title="No campaigns yet"/>}</div></Card></div>
+  </div>
 }
-
+function StatCard({ label, value, detail, compact = false }: { label: string; value: string | number; detail: string; compact?: boolean }) { return <Card className="p-4"><p className="text-[10px] font-semibold text-slate-500">{label}</p><p className={`mt-3 font-bold tracking-[-0.03em] ${compact ? 'text-base' : 'text-[22px]'}`}>{value}</p><p className="mt-1 text-[9px] font-medium text-slate-400">{detail}</p></Card> }
+function QuickAction({ icon, label, detail, to }: { icon: string; label: string; detail: string; to: string }) { return <Link className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 hover:border-indigo-100 hover:bg-indigo-50/40" to={to}><span className="grid size-9 place-items-center rounded-lg bg-[#eef1ff] text-[#4f5ff7]"><Icon className="size-4" name={icon}/></span><span><span className="block text-xs font-bold">{label}</span><span className="mt-0.5 block text-[9px] text-slate-400">{detail}</span></span></Link> }
+function formatDate(value: string) { return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(value)) }

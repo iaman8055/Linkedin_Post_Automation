@@ -49,3 +49,22 @@ class Schedule(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     post: Mapped[Post] = relationship(back_populates="schedules")
     user: Mapped[User] = relationship()
 
+    @property
+    def retryable(self) -> bool:
+        latest = max(
+            self.post.publishing_logs,
+            key=lambda log: log.attempt_number,
+            default=None,
+        )
+        metadata = latest.response_metadata if latest is not None else None
+        return bool(metadata and metadata.get("retry_safe") is True)
+
+    @property
+    def outcome_uncertain(self) -> bool:
+        latest = max(
+            self.post.publishing_logs,
+            key=lambda log: log.attempt_number,
+            default=None,
+        )
+        metadata = latest.response_metadata if latest is not None else None
+        return bool(metadata and metadata.get("outcome_uncertain") is True)

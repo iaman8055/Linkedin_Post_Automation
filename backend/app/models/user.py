@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.auth_token import AuthToken
     from app.models.campaign import Campaign
     from app.models.linkedin_account import LinkedInAccount
     from app.models.post import Post
@@ -39,4 +40,6 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     posts: Mapped[list[Post]] = relationship(back_populates="user", cascade="all, delete-orphan")
-
+    auth_tokens: Mapped[list[AuthToken]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", foreign_keys="AuthToken.user_id"
+    )

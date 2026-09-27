@@ -26,6 +26,50 @@ services:
       timeout: 3s
       retries: 5
 
+  worker-publishing:
+    build:
+      context: ./backend
+    env_file: .env
+    command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=publishing", "--hostname=publishing@%h"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-ai:
+    build:
+      context: ./backend
+    env_file: .env
+    command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=ai", "--hostname=ai@%h"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-background:
+    build:
+      context: ./backend
+    env_file: .env
+    command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=default,research,analytics,notifications", "--hostname=background@%h"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: ./backend
+    env_file: .env
+    command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "beat", "--loglevel=INFO", "--schedule=/tmp/celerybeat-schedule"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     environment:

@@ -70,3 +70,9 @@ class IdeaStatus(StrEnum):
     USED = "USED"
     ARCHIVED = "ARCHIVED"
 
+
+class AuthTokenKind(StrEnum):
+    REFRESH = "REFRESH"
+    EMAIL_VERIFICATION = "EMAIL_VERIFICATION"
+    PASSWORD_RESET = "PASSWORD_RESET"
+
