@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Card, PageHeader, Skeleton } from '../../../components/ui/Primitives'
 import { useAuth } from '../../auth/AuthProvider'
 import { getAIStatus } from '../api'
+import { WorkspaceSettingsCard } from '../../workspaces/components/WorkspaceSettingsCard'
 
 export function SettingsPage() {
   const auth = useAuth()
@@ -15,6 +16,7 @@ export function SettingsPage() {
       <Card className="p-5"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">AI provider</p>{ai.isLoading ? <Skeleton className="mt-3 h-16"/> : <><h2 className="mt-2 text-base font-bold">{ai.data?.selected_provider ?? 'Not configured'}</h2><p className="mt-1 text-[13px] text-slate-500">{ai.data?.selected_model ?? 'Choose a provider and model in the server environment.'}</p><p className={`mt-4 text-xs font-semibold ${ai.data?.provider_installed ? 'text-emerald-600' : 'text-amber-600'}`}>{ai.data?.provider_installed ? 'Provider adapter available' : 'Provider configuration required'}</p></>}</Card>
       <Card className="p-5 lg:col-span-2"><div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-wide text-slate-400">LinkedIn</p><h2 className="mt-2 text-base font-bold">Connection and publishing test</h2><p className="mt-1 text-[13px] text-slate-500">Connect the real LinkedIn account used for publishing.</p></div><Link className="rounded-lg bg-[#4f5ff7] px-4 py-2.5 text-xs font-bold text-white" to="/settings/linkedin">Manage LinkedIn</Link></div></Card>
       <Card className="p-5 lg:col-span-2"><div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Personal voice</p><h2 className="mt-2 text-base font-bold">Writing profiles</h2><p className="mt-1 text-[13px] text-slate-500">Define the tone, rhythm, vocabulary, and depth used by AI drafts.</p></div><Link className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700" to="/settings/writing-profiles">Manage profiles</Link></div></Card>
+      <WorkspaceSettingsCard/>
     </div>
   </div>
 }

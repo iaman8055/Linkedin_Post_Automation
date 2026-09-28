@@ -12,6 +12,7 @@ class LinkedInAccountResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    workspace_id: UUID | None
     linkedin_member_id: str
     display_name: str | None
     profile_image_url: str | None

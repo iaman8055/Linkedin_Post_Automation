@@ -2,16 +2,28 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Response, status
 
-from app.api.dependencies import CurrentUser, DatabaseSession
+from app.api.ai.router import ProviderRegistry
+from app.api.dependencies import AppSettings, CurrentUser, DatabaseSession
 from app.schemas.writing_profile import (
+    AnalyzeWritingStyleRequest,
+    AnalyzeWritingStyleResponse,
     WritingProfileCreate,
     WritingProfileListResponse,
     WritingProfileResponse,
     WritingProfileUpdate,
 )
+from app.services.ai.writing_style_analyzer import WritingStyleAnalyzer
 from app.services.writing_profiles import WritingProfileService
 
 router = APIRouter(prefix="/writing-profiles")
+
+
+@router.post("/analyze", response_model=AnalyzeWritingStyleResponse)
+def analyze_style(
+    payload: AnalyzeWritingStyleRequest, user: CurrentUser, session: DatabaseSession,
+    settings: AppSettings, registry: ProviderRegistry,
+) -> AnalyzeWritingStyleResponse:
+    return WritingStyleAnalyzer(session, settings, registry).analyze(user.id, payload)
 
 
 @router.post("", response_model=WritingProfileResponse, status_code=status.HTTP_201_CREATED)

@@ -20,6 +20,7 @@ from app.models.auth_token import AuthToken
 from app.models.enums import AuthTokenKind
 from app.models.user import User
 from app.models.user_settings import UserSettings
+from app.models.workspace import Workspace
 from app.repositories.auth_token import AuthTokenRepository
 from app.repositories.user import UserRepository
 
@@ -50,8 +51,13 @@ class AuthService:
             password_hash=hash_password(password),
             display_name=display_name.strip(),
         )
-        user.settings = UserSettings()
+        workspace = Workspace(name="Personal", kind="personal", is_default=True, is_active=True)
+        user.settings = UserSettings(active_workspace_id=workspace.id)
         self.users.add(user)
+        workspace.user_id = user.id
+        self.session.add(workspace)
+        self.session.flush()
+        user.settings.active_workspace_id = workspace.id
         self.issue_action_token(user, AuthTokenKind.EMAIL_VERIFICATION)
         pair = self._create_token_pair(user)
         try:

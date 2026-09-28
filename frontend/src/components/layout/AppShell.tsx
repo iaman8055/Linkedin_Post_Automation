@@ -5,30 +5,47 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { Brand } from '../../features/auth/pages/AuthPage'
 import { getLinkedInStatus, linkedinKeys } from '../../features/linkedin/api'
+import { listWorkspaces, workspaceKeys } from '../../features/workspaces/api'
 import { Icon } from '../ui/Icon'
 
 const navigation = [
-  { label: 'Dashboard', to: '/dashboard', icon: 'dashboard' }, { label: 'Create Post', to: '/create', icon: 'create' },
-  { label: 'Campaigns', to: '/campaigns', icon: 'campaigns' }, { label: 'Calendar', to: '/calendar', icon: 'calendar' },
-  { label: 'Posts', to: '/posts', icon: 'posts' }, { label: 'Templates', to: '/templates', icon: 'templates' },
-  { label: 'Research', to: '/research', icon: 'search' }, { label: 'Analytics', to: '/analytics', icon: 'analytics' },
-  { label: 'AI Insights', to: '/insights', icon: 'insights' }, { label: 'Notifications', to: '/notifications', icon: 'bell' },
+  { heading: 'Workspace', items: [
+    { label: 'Dashboard', to: '/dashboard', icon: 'dashboard' },
+    { label: 'Create post', to: '/create', icon: 'create' },
+    { label: 'Content Studio', to: '/studio', icon: 'sparkle' },
+  ] },
+  { heading: 'Organize', items: [
+    { label: 'Posts', to: '/posts', icon: 'posts' },
+    { label: 'Calendar', to: '/calendar', icon: 'calendar' },
+    { label: 'Campaigns', to: '/campaigns', icon: 'campaigns' },
+    { label: 'Templates', to: '/templates', icon: 'templates' },
+  ] },
+  { heading: 'Grow', items: [
+    { label: 'Engagement Lab', to: '/engagement', icon: 'sparkle' },
+    { label: 'Research', to: '/research', icon: 'search' },
+    { label: 'Analytics', to: '/analytics', icon: 'analytics' },
+    { label: 'My Knowledge', to: '/knowledge', icon: 'insights' },
+  ] },
 ]
+const allNavigation = navigation.flatMap((group) => group.items)
 
 export function AppShell({ children }: PropsWithChildren) {
   const [open, setOpen] = useState(false); const auth = useAuth(); const location = useLocation()
   const linkedIn = useQuery({ queryKey: linkedinKeys.status, queryFn: getLinkedInStatus, staleTime: 60_000 })
+  const workspaces = useQuery({ queryKey: workspaceKeys.all, queryFn: listWorkspaces, staleTime: 60_000 })
   const connected = linkedIn.data?.accounts.some((account) => account.is_connected) ?? false
-  const title = navigation.find((item) => location.pathname.startsWith(item.to))?.label ?? (location.pathname.startsWith('/settings') ? 'Settings' : 'Workspace')
+  const title = allNavigation.find((item) => location.pathname.startsWith(item.to))?.label ?? (location.pathname.startsWith('/settings') ? 'Settings' : 'Workspace')
   const initial = auth.user?.display_name.slice(0, 1).toUpperCase() ?? 'U'
-  return <div className="min-h-screen bg-[#f5f7fb] text-[#172033] lg:pl-[224px]">
+  const activeWorkspace = workspaces.data?.items.find((item) => item.is_current)
+  return <div className="min-h-screen text-[#19162c] lg:pl-[242px]">
     {open && <button aria-label="Close navigation" className="fixed inset-0 z-30 bg-slate-950/25 lg:hidden" onClick={() => setOpen(false)} type="button" />}
-    <aside className={`fixed inset-y-0 left-0 z-40 flex w-[224px] flex-col border-r border-[#e4e8f0] bg-white px-3.5 py-5 transition-transform lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
-      <div className="px-2"><Brand /></div>
-      <nav aria-label="Main navigation" className="mt-7 flex-1 space-y-0.5 overflow-y-auto">{navigation.map((item) => <NavLink className={({ isActive }) => `flex h-9 items-center gap-3 rounded-lg px-3 text-[12.5px] font-semibold ${isActive ? 'bg-[#eef1ff] text-[#4353e8]' : 'text-[#5f6c80] hover:bg-slate-50 hover:text-slate-900'}`} key={item.to} onClick={() => setOpen(false)} to={item.to}><Icon className="size-[16px]" name={item.icon}/>{item.label}</NavLink>)}</nav>
-      <div className="border-t border-slate-100 pt-3"><NavLink className={({ isActive }) => `flex h-9 items-center gap-3 rounded-lg px-3 text-[12.5px] font-semibold ${isActive ? 'bg-[#eef1ff] text-[#4353e8]' : 'text-[#5f6c80] hover:bg-slate-50'}`} to="/settings"><Icon className="size-[16px]" name="settings"/>Settings</NavLink><div className="mt-3 flex items-center gap-2.5 rounded-lg bg-slate-50 px-2.5 py-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#e6eaff] text-xs font-bold text-[#4353e8]">{initial}</span><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-bold">{auth.user?.display_name}</p><p className="text-[9px] text-slate-400">Free plan</p></div><button aria-label="Sign out" className="text-slate-400 hover:text-slate-700" onClick={() => void auth.signOut()} type="button"><Icon className="size-4" name="logout"/></button></div></div>
+    <aside className={`fixed inset-y-0 left-0 z-40 flex w-[242px] flex-col border-r border-[#ebe7f1] bg-[#fcfbfe]/95 px-3.5 py-5 shadow-[8px_0_30px_rgba(43,31,75,.025)] backdrop-blur transition-transform lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className="px-2.5"><Brand /></div>
+      <NavLink className="mx-1 mt-6 flex items-center justify-between rounded-xl border border-[#e6e1ee] bg-white px-3 py-2.5 shadow-sm" to="/settings"><div><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#9a93a8]">Workspace</p><p className="mt-0.5 max-w-[145px] truncate text-[11px] font-bold text-[#3b3548]">{activeWorkspace?.name ?? 'Personal'}</p></div><span className="text-xs text-[#8b72fb]">⌄</span></NavLink>
+      <nav aria-label="Main navigation" className="mt-5 flex-1 overflow-y-auto px-1">{navigation.map((group) => <div className="mb-5" key={group.heading}><p className="mb-1.5 px-2.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#aaa4b5]">{group.heading}</p><div className="space-y-0.5">{group.items.map((item) => <NavLink className={({ isActive }) => `group flex h-9 items-center gap-3 rounded-[10px] px-2.5 text-[12px] font-semibold ${isActive ? 'bg-[#eeeaff] text-[#5f42e8]' : 'text-[#696276] hover:bg-[#f5f2fa] hover:text-[#292438]'}`} key={item.to} onClick={() => setOpen(false)} to={item.to}><span className={`grid size-6 place-items-center rounded-md ${location.pathname.startsWith(item.to) ? 'bg-white text-[#6d4aff] shadow-sm' : 'text-[#8c8499] group-hover:text-[#6d4aff]'}`}><Icon className="size-[14px]" name={item.icon}/></span>{item.label}</NavLink>)}</div></div>)}</nav>
+      <div className="border-t border-[#ece8f2] pt-3"><NavLink className={({ isActive }) => `flex h-9 items-center gap-3 rounded-[10px] px-3 text-[12px] font-semibold ${isActive ? 'bg-[#eeeaff] text-[#5f42e8]' : 'text-[#696276] hover:bg-[#f5f2fa]'}`} to="/settings"><Icon className="size-[15px]" name="settings"/>Settings</NavLink><div className="mt-3 flex items-center gap-2.5 rounded-xl bg-[#f4f1f8] px-2.5 py-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#7554ff] to-[#f1737d] text-xs font-bold text-white">{initial}</span><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-bold">{auth.user?.display_name}</p><p className="text-[9px] text-[#9991a5]">Creator workspace</p></div><button aria-label="Sign out" className="text-[#aaa3b6] hover:text-[#554c64]" onClick={() => void auth.signOut()} type="button"><Icon className="size-4" name="logout"/></button></div></div>
     </aside>
-    <header className="sticky top-0 z-20 flex h-[58px] items-center justify-between border-b border-[#e6eaf1] bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8"><div className="flex items-center gap-3"><button aria-label="Open navigation" className="grid size-9 place-items-center rounded-lg border border-slate-200 text-slate-600 lg:hidden" onClick={() => setOpen(true)} type="button"><Icon name="menu"/></button><p className="text-sm font-bold lg:hidden">{title}</p></div><div className="ml-auto flex items-center gap-2.5"><NavLink className="hidden items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-bold text-slate-600 sm:flex" to="/settings/linkedin"><span className={`size-1.5 rounded-full ${connected ? 'bg-emerald-500' : 'bg-slate-300'}`}/>{connected ? 'LinkedIn Connected' : 'Connect LinkedIn'}</NavLink><NavLink aria-label="Notifications" className="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100" to="/notifications"><Icon className="size-4" name="bell"/></NavLink><span className="grid size-8 place-items-center rounded-full bg-[#172033] text-[11px] font-bold text-white">{initial}</span></div></header>
-    <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">{children}</main>
+    <header className="sticky top-0 z-20 flex h-[64px] items-center justify-between border-b border-[#ebe7f1] bg-[#f9f8fc]/90 px-4 backdrop-blur-xl sm:px-6 lg:px-9"><div className="flex items-center gap-3"><button aria-label="Open navigation" className="grid size-9 place-items-center rounded-[10px] border border-[#e2deea] bg-white text-[#625b6e] lg:hidden" onClick={() => setOpen(true)} type="button"><Icon name="menu"/></button><p className="text-sm font-bold lg:hidden">{title}</p><p className="hidden text-xs font-semibold text-[#8a8295] lg:block">{title}</p></div><div className="ml-auto flex items-center gap-2.5"><NavLink className="hidden items-center gap-2 rounded-full border border-[#e2deea] bg-white px-3 py-1.5 text-[9px] font-bold text-[#655e71] shadow-sm sm:flex" to="/settings/linkedin"><span className={`size-1.5 rounded-full ${connected ? 'bg-emerald-500' : 'bg-[#c9c3d2]'}`}/>{connected ? 'LinkedIn connected' : 'Connect LinkedIn'}</NavLink><NavLink aria-label="Notifications" className="grid size-9 place-items-center rounded-full bg-white text-[#746d80] shadow-sm ring-1 ring-[#e8e4ed] hover:text-[#6d4aff]" to="/notifications"><Icon className="size-4" name="bell"/></NavLink><span className="grid size-9 place-items-center rounded-full bg-[#28233a] text-[11px] font-bold text-white shadow-sm">{initial}</span></div></header>
+    <main className="px-4 py-7 sm:px-6 lg:px-9 lg:py-8">{children}</main>
   </div>
 }

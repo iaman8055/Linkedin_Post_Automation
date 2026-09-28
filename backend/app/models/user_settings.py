@@ -24,5 +24,8 @@ class UserSettings(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     in_app_notifications_enabled: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False
     )
+    active_workspace_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("workspaces.id", ondelete="SET NULL"), index=True
+    )
 
     user: Mapped[User] = relationship(back_populates="settings")

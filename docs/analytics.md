@@ -78,3 +78,14 @@ publishing time in the user's configured timezone, and campaign performance.
 These results are deterministic summaries of the user's own data. Every result includes its evidence
 and sample size, and the UI explicitly states that observations are not universal LinkedIn rules. The
 service does not invent missing metrics or send private analytics to an external AI provider.
+
+## Personalized scheduling suggestions
+
+`GET /api/v1/analytics/scheduling-suggestions` groups the user's measured posts by weekday and local
+publishing hour. Suggestions require at least five measured posts, and an individual window is shown
+only after it has at least two samples. At most three windows are returned, ranked by average measured
+engagement rate.
+
+The endpoint uses the user's configured timezone and returns evidence and sample size for every result.
+If there is not enough repeated history, it returns `insufficient_data` rather than generic industry
+advice. Suggestions are observations, not guarantees and not universal LinkedIn best times.

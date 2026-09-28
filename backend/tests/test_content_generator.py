@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.models.enums import AIJobStatus, PostStatus
+from app.models.knowledge_item import KnowledgeItem
 from app.models.user import User
 from app.schemas.ai import GeneratePostsRequest
 from app.services.ai.content_generator import ContentGenerator
@@ -78,3 +79,17 @@ def test_content_generator_saves_unique_drafts_and_safe_job_metadata(
     assert job is not None
     assert job.status == AIJobStatus.SUCCEEDED
     assert "AI agents" not in str(job.input_data)
+
+
+def test_selected_knowledge_is_added_to_prompt_only_when_explicit() -> None:
+    payload = GeneratePostsRequest(
+        topic="Engineering", subject="Reliable systems", audience="Developers"
+    )
+    item = KnowledgeItem(
+        category="project", title="Queue worker", content="Implemented safe retries."
+    )
+    without_knowledge = ContentGenerator._messages(payload)
+    with_knowledge = ContentGenerator._messages(payload, knowledge_items=[item])
+
+    assert "Queue worker" not in without_knowledge[1].content
+    assert "Queue worker" in with_knowledge[1].content

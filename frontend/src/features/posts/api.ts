@@ -27,18 +27,30 @@ export type PostList = { items: Post[]; total: number; offset: number; limit: nu
 export type GeneratePostsInput = {
   topic: string
   subject: string
+  post_type?: 'educational' | 'storytelling' | 'personal_experience' | 'technical' | 'career_advice' | 'industry_insight' | 'case_study' | 'opinion' | 'promotional' | 'question' | 'poll'
   audience: string
   tone: string
   language: string
   length: 'short' | 'medium' | 'long'
   call_to_action: string | null
+  keywords?: string[]
+  personal_experience?: string | null
+  reference_material?: string | null
+  desired_hashtags?: string[]
   include_hashtags: boolean
   hashtag_count: number
   number_of_posts: number
   writing_profile_id: string | null
   research_source_ids: string[]
+  knowledge_item_ids?: string[]
 }
 export type GeneratePostsResult = { job_id: string; posts: Post[] }
+export type AssistPostAction = 'rewrite' | 'shorten' | 'expand' | 'improve' | 'change_tone' | 'improve_hook' | 'improve_cta' | 'add_hashtags'
+export type AssistPostResult = { job_id: string; action: AssistPostAction; content: string }
+export type ScoreDimension = 'hook' | 'clarity' | 'readability' | 'engagement_potential' | 'storytelling' | 'value' | 'cta' | 'structure' | 'authenticity'
+export type PostScore = { post_id: string; job_id: string; overall_score: number; disclaimer: string; breakdown: { dimension: ScoreDimension; score: number; explanation: string }[] }
+export type GeneratedHook = { category: string; text: string }
+export type GeneratedHooks = { job_id: string; hooks: GeneratedHook[] }
 export type QualityIssue = { type: string; severity: 'low' | 'medium' | 'high'; message: string; suggestion: string }
 export type QualityCheck = { post_id: string; status: 'pass' | 'warning' | 'fail'; issues: QualityIssue[]; ai_review_performed: boolean; job_id: string | null }
 export type PostMedia = { id: string; post_id: string; media_type: 'IMAGE' | 'VIDEO' | 'DOCUMENT'; mime_type: string; size_bytes: number | null; position: number; metadata_json: { filename?: string }; created_at: string }
@@ -87,6 +99,22 @@ export function generatePosts(input: GeneratePostsInput) {
 
 export function checkPostQuality(id: string) {
   return apiRequest<QualityCheck>(`/posts/${id}/quality-check`, { method: 'POST' })
+}
+
+export function assistPost(id: string, action: AssistPostAction, tone?: string) {
+  return apiRequest<AssistPostResult>(`/ai/posts/${id}/assist`, {
+    method: 'POST', body: JSON.stringify({ action, tone: tone || null }),
+  })
+}
+
+export function scorePost(id: string) {
+  return apiRequest<PostScore>(`/ai/posts/${id}/score`, { method: 'POST' })
+}
+
+export function generateHooks(topic: string, count = 7) {
+  return apiRequest<GeneratedHooks>('/ai/hooks/generate', {
+    method: 'POST', body: JSON.stringify({ topic, count }),
+  })
 }
 
 export function listPostMedia(postId: string) {

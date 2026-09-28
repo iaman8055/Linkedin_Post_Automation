@@ -189,6 +189,38 @@ The research workspace at `/research` uses Tavily only when `RESEARCH_PROVIDER=t
 `RESEARCH_API_KEY` are configured. Searches persist the real returned URLs and snippets; selected
 sources can ground a generated draft and remain linked to it. See [docs/research.md](docs/research.md).
 
+## Content studio
+
+The `/studio` workspace combines AI content ideas, source-to-content repurposing, and content planning.
+Generated work enters the existing post lifecycle as a draft. Plan approval schedules automatic
+publishing only when the user explicitly opts in. See
+[docs/content-workflows.md](docs/content-workflows.md) for API and safety behavior.
+
+## Writing style and personal knowledge
+
+Writing profiles can now be suggested from the user's own post samples and remain manually editable.
+The private knowledge workspace stores reusable personal context, but only explicitly selected items are
+included in a generation request. See
+[docs/writing-style-and-knowledge.md](docs/writing-style-and-knowledge.md).
+
+## Engagement Lab
+
+The `/engagement` workspace provides editable AI comment-response suggestions and controlled A/B post
+experiments. Replies are never posted automatically, and experiment comparisons require real analytics
+for both published versions. See [docs/engagement-lab.md](docs/engagement-lab.md).
+
+## Creator progress
+
+The dashboard includes professional publishing goals, activity-based levels, streaks, and earned
+milestones. Impression achievements require real collected LinkedIn analytics. See
+[docs/creator-progress.md](docs/creator-progress.md).
+
+## Workspaces
+
+Settings supports owned personal, company, and client workspaces. LinkedIn OAuth connections are scoped
+to the current workspace, with existing accounts migrated into a default Personal workspace. Content
+records remain user-owned until the subsequent isolation migration. See [docs/workspaces.md](docs/workspaces.md).
+
 ## Quality checker
 
 Saved posts expose an advisory quality check from the editor. Structural checks always run locally;

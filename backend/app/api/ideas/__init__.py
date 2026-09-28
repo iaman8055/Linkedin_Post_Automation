@@ -1,0 +1,1 @@
+"""Content idea endpoints."""

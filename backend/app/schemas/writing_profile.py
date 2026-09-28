@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -68,3 +68,31 @@ class WritingProfileResponse(WritingProfileBase):
 class WritingProfileListResponse(BaseModel):
     items: list[WritingProfileResponse]
     total: int
+
+
+class AnalyzeWritingStyleRequest(BaseModel):
+    post_ids: list[UUID] = Field(default_factory=list, max_length=30)
+
+
+class WritingStyleAnalysis(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    average_sentence_length: float = Field(ge=1, le=100)
+    paragraph_length: Literal["Short", "Medium", "Long"]
+    formality: Literal["Casual", "Conversational", "Professional", "Formal"]
+    tone: str = Field(min_length=2, max_length=80)
+    emoji_frequency: Literal["None", "Low", "Medium", "High"]
+    hashtag_frequency: Literal["None", "Low", "Medium", "High"]
+    storytelling: Literal["Low", "Medium", "High"]
+    technical_depth: Literal["Accessible", "Balanced", "Expert"]
+    cta_style: str = Field(min_length=2, max_length=240)
+    opening_style: str = Field(min_length=2, max_length=240)
+    vocabulary_patterns: list[str] = Field(max_length=20)
+
+
+class AnalyzeWritingStyleResponse(BaseModel):
+    job_id: UUID
+    sample_size: int
+    disclaimer: str
+    analysis: WritingStyleAnalysis
+    suggested_profile: WritingProfileCreate

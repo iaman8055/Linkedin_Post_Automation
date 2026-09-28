@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -18,6 +18,8 @@ from app.schemas.analytics import (
     PerformanceInsight,
     PerformanceInsightsResponse,
     PostAnalyticsResponse,
+    SchedulingSuggestion,
+    SchedulingSuggestionsResponse,
 )
 from app.services.linkedin.client import LinkedInClient, LinkedInClientError
 from app.services.linkedin.scopes import parse_linkedin_scopes
@@ -168,6 +170,62 @@ class AnalyticsService:
             disclaimer=disclaimer,
             insights=insights,
         )
+
+    def scheduling_suggestions(self, user_id: UUID) -> SchedulingSuggestionsResponse:
+        latest = [
+            item for item in self.analytics.latest_for_user(user_id)
+            if item.engagement_rate is not None and item.post.published_at is not None
+        ]
+        disclaimer = (
+            "Suggestions are based only on your measured historical performance, not universal "
+            "LinkedIn best times."
+        )
+        if len(latest) < self.minimum_insight_posts:
+            return SchedulingSuggestionsResponse(
+                status="insufficient_data", analyzed_posts=len(latest),
+                minimum_required=self.minimum_insight_posts, disclaimer=disclaimer,
+                suggestions=[],
+            )
+        timezone, timezone_name = self._user_timezone(latest)
+        groups: dict[tuple[int, int], list[float]] = defaultdict(list)
+        for item in latest:
+            assert item.post.published_at is not None
+            published_at = item.post.published_at
+            if published_at.tzinfo is None:
+                published_at = published_at.replace(tzinfo=UTC)
+            local = published_at.astimezone(timezone)
+            groups[(local.weekday(), local.hour)].append(item.engagement_rate or 0)
+        eligible = [
+            (slot, values) for slot, values in groups.items() if len(values) >= 2
+        ]
+        eligible.sort(key=lambda item: sum(item[1]) / len(item[1]), reverse=True)
+        suggestions = []
+        reference_monday = datetime(2026, 1, 5, tzinfo=timezone)
+        for (weekday, hour), values in eligible[:3]:
+            average = sum(values) / len(values)
+            suggestions.append(SchedulingSuggestion(
+                weekday=(reference_monday + timedelta(days=weekday)).strftime("%A"),
+                time=f"{hour:02d}:00", timezone=timezone_name,
+                average_engagement_rate=average, sample_size=len(values),
+                evidence=(
+                    f"{len(values)} posts averaged {average:.2f}% measured engagement "
+                    "in this window."
+                ),
+            ))
+        return SchedulingSuggestionsResponse(
+            status="ready" if suggestions else "insufficient_data",
+            analyzed_posts=len(latest), minimum_required=self.minimum_insight_posts,
+            disclaimer=disclaimer, suggestions=suggestions,
+        )
+
+    @staticmethod
+    def _user_timezone(items: list[PostAnalytics]) -> tuple[ZoneInfo, str]:
+        user_settings = items[0].post.user.settings
+        timezone_name = user_settings.timezone if user_settings else "UTC"
+        try:
+            return ZoneInfo(timezone_name), timezone_name
+        except ZoneInfoNotFoundError:
+            return ZoneInfo("UTC"), "UTC"
 
     @staticmethod
     def _top_post_insight(items: list[PostAnalytics]) -> PerformanceInsight:

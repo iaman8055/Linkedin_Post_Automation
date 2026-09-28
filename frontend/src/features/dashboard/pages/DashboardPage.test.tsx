@@ -18,6 +18,17 @@ vi.mock('../../linkedin/api', () => ({
   linkedinKeys: { status: ['linkedin', 'status'] },
   getLinkedInStatus: vi.fn(() => Promise.resolve({ accounts: [] })),
 }))
+vi.mock('../../creator-progress/api', () => ({
+  creatorProgressKeys: { all: ['creator-progress'] },
+  getCreatorProgress: vi.fn(() => Promise.resolve({
+    creator_level: 1, level_points: 100, next_level_points: 500,
+    posts_published: 1, drafts_created: 2, ideas_generated: 0,
+    total_impressions: null, current_streak: 1,
+    monthly_post_target: 8, monthly_posts_published: 1,
+    monthly_goal_percent: 13, achievements: [],
+  })),
+  updateCreatorGoal: vi.fn(),
+}))
 
 it('loads real workspace totals without fabricated analytics', async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })

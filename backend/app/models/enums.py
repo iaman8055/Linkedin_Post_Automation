@@ -71,8 +71,12 @@ class IdeaStatus(StrEnum):
     ARCHIVED = "ARCHIVED"
 
 
+class ContentPlanStatus(StrEnum):
+    DRAFT = "DRAFT"
+    APPROVED = "APPROVED"
+
+
 class AuthTokenKind(StrEnum):
     REFRESH = "REFRESH"
     EMAIL_VERIFICATION = "EMAIL_VERIFICATION"
     PASSWORD_RESET = "PASSWORD_RESET"
-

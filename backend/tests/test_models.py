@@ -13,9 +13,15 @@ def test_initial_schema_registers_expected_tables() -> None:
         "audit_logs",
         "auth_tokens",
         "campaigns",
+        "creator_goals",
+        "achievements",
         "content_ideas",
+        "content_experiments",
+        "content_plan_items",
+        "content_plans",
         "hashtags",
         "linkedin_accounts",
+        "knowledge_items",
         "notifications",
         "post_analytics",
         "post_hashtags",
@@ -29,6 +35,7 @@ def test_initial_schema_registers_expected_tables() -> None:
         "user_settings",
         "users",
         "writing_profiles",
+        "workspaces",
     }
 
     assert expected_tables == set(Base.metadata.tables)

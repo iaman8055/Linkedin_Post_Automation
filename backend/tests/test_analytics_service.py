@@ -105,3 +105,36 @@ def test_performance_insights_use_latest_owned_snapshots(db_session: Session) ->
     assert result.insights[0].type == "top_post"
     assert "Post 4" in result.insights[0].observation
     assert any(item.type == "content_length" for item in result.insights)
+
+
+def test_scheduling_suggestions_require_repeated_owned_windows(db_session: Session) -> None:
+    user = User(
+        email="schedule-insights@example.com", password_hash="hashed", display_name="Timing"
+    )
+    posts = [
+        Post(
+            user=user, title=f"Tuesday {index}", content="Measured content",
+            status=PostStatus.PUBLISHED,
+            published_at=datetime(2026, 9, 1 + (index * 7), 10, tzinfo=UTC),
+        )
+        for index in range(5)
+    ]
+    db_session.add_all([user, *posts])
+    db_session.flush()
+    db_session.add_all([
+        PostAnalytics(
+            user_id=user.id, post=post, impressions=100, likes=10, comments=2, shares=1,
+            engagement_rate=13.0, captured_at=datetime.now(UTC),
+        )
+        for post in posts
+    ])
+    db_session.commit()
+
+    service = AnalyticsService(db_session, Settings(), AnalyticsClient())  # type: ignore[arg-type]
+    result = service.scheduling_suggestions(user.id)
+
+    assert result.status == "ready"
+    assert result.suggestions[0].weekday == "Tuesday"
+    assert result.suggestions[0].time == "10:00"
+    assert result.suggestions[0].sample_size == 5
+    assert "not universal" in result.disclaimer

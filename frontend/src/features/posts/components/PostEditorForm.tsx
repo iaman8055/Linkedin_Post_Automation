@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -14,6 +15,7 @@ type PostEditorFormProps = {
   defaultValues: PostFormValues
   isSaving: boolean
   serverError?: string
+  contentOverride?: string | null
   onContentChange: (content: string) => void
   onSubmit: (values: PostFormValues) => void
 }
@@ -22,6 +24,7 @@ export function PostEditorForm({
   defaultValues,
   isSaving,
   serverError,
+  contentOverride,
   onContentChange,
   onSubmit,
 }: PostEditorFormProps) {
@@ -29,9 +32,13 @@ export function PostEditorForm({
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<PostFormValues>({ resolver: zodResolver(postSchema), values: defaultValues })
   const content = useWatch({ control, name: 'content' })
+  useEffect(() => {
+    if (contentOverride != null) setValue('content', contentOverride, { shouldDirty: true })
+  }, [contentOverride, setValue])
 
   return (
     <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>

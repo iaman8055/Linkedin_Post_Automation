@@ -1,16 +1,26 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
 from app.api.dependencies import AppSettings, CurrentUser, DatabaseSession
 from app.schemas.ai import (
     AIProviderStatusResponse,
+    AssistPostRequest,
+    AssistPostResponse,
     GeneratePostsRequest,
     GeneratePostsResponse,
 )
+from app.schemas.content_intelligence import (
+    GenerateHooksRequest,
+    GenerateHooksResponse,
+    PostScoreResponse,
+)
 from app.schemas.post import PostResponse
 from app.services.ai.content_generator import ContentGenerator
+from app.services.ai.content_intelligence import ContentIntelligenceService
 from app.services.ai.registry import AIProviderRegistry, create_provider_registry
+from app.services.ai.writing_assistant import WritingAssistant
 
 router = APIRouter(prefix="/ai")
 
@@ -50,3 +60,37 @@ def generate_posts(
         job_id=job_id,
         posts=[PostResponse.model_validate(post) for post in posts],
     )
+
+
+@router.post("/posts/{post_id}/assist", response_model=AssistPostResponse)
+def assist_post(
+    post_id: UUID,
+    payload: AssistPostRequest,
+    user: CurrentUser,
+    session: DatabaseSession,
+    settings: AppSettings,
+    registry: ProviderRegistry,
+) -> AssistPostResponse:
+    job_id, content = WritingAssistant(session, settings, registry).assist(
+        user.id, post_id, payload
+    )
+    return AssistPostResponse(job_id=job_id, action=payload.action, content=content)
+
+
+@router.post("/posts/{post_id}/score", response_model=PostScoreResponse)
+def score_post(
+    post_id: UUID, user: CurrentUser, session: DatabaseSession,
+    settings: AppSettings, registry: ProviderRegistry,
+) -> PostScoreResponse:
+    return ContentIntelligenceService(session, settings, registry).score_post(user.id, post_id)
+
+
+@router.post("/hooks/generate", response_model=GenerateHooksResponse)
+def generate_hooks(
+    payload: GenerateHooksRequest, user: CurrentUser, session: DatabaseSession,
+    settings: AppSettings, registry: ProviderRegistry,
+) -> GenerateHooksResponse:
+    job_id, result = ContentIntelligenceService(session, settings, registry).generate_hooks(
+        user.id, payload
+    )
+    return GenerateHooksResponse(job_id=job_id, hooks=result.hooks)

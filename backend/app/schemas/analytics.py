@@ -55,3 +55,20 @@ class PerformanceInsightsResponse(BaseModel):
     minimum_required: int
     disclaimer: str
     insights: list[PerformanceInsight]
+
+
+class SchedulingSuggestion(BaseModel):
+    weekday: str
+    time: str
+    timezone: str
+    average_engagement_rate: float
+    sample_size: int
+    evidence: str
+
+
+class SchedulingSuggestionsResponse(BaseModel):
+    status: str
+    analyzed_posts: int
+    minimum_required: int
+    disclaimer: str
+    suggestions: list[SchedulingSuggestion]

@@ -16,11 +16,16 @@ if TYPE_CHECKING:
 class LinkedInAccount(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "linkedin_accounts"
     __table_args__ = (
-        UniqueConstraint("user_id", "linkedin_member_id", name="uq_linkedin_account_member"),
+        UniqueConstraint(
+            "workspace_id", "linkedin_member_id", name="uq_linkedin_account_workspace_member"
+        ),
     )
 
     user_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
     )
     linkedin_member_id: Mapped[str] = mapped_column(String(128), nullable=False)
     display_name: Mapped[str | None] = mapped_column(String(120))
@@ -32,4 +37,3 @@ class LinkedInAccount(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_connected: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     user: Mapped[User] = relationship(back_populates="linkedin_accounts")
-

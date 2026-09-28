@@ -8,9 +8,11 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.core.errors import ApplicationError
 from app.models.enums import PostStatus
+from app.models.knowledge_item import KnowledgeItem
 from app.models.post import Post
 from app.models.research_source import PostResearchSource, ResearchSource
 from app.models.writing_profile import WritingProfile
+from app.repositories.knowledge_item import KnowledgeItemRepository
 from app.repositories.post import PostRepository
 from app.repositories.research_source import ResearchSourceRepository
 from app.schemas.ai import GeneratedDraft, GeneratedDraftCollection, GeneratePostsRequest
@@ -28,6 +30,7 @@ class ContentGenerator:
         self.execution = AIExecutionService(session, settings, registry)
         self.posts = PostRepository(session)
         self.sources = ResearchSourceRepository(session)
+        self.knowledge = KnowledgeItemRepository(session)
 
     def generate_posts(
         self, user_id: UUID, payload: GeneratePostsRequest
@@ -44,11 +47,15 @@ class ContentGenerator:
             self._get_source(user_id, source_id)
             for source_id in payload.research_source_ids
         ]
+        knowledge_items = [
+            self._get_knowledge_item(user_id, item_id)
+            for item_id in payload.knowledge_item_ids
+        ]
         execution = self.execution.execute(
             user_id=user_id,
             job_type="generate_posts",
             request=AIGenerationRequest(
-                messages=self._messages(payload, profile, sources),
+                messages=self._messages(payload, profile, sources, knowledge_items),
                 model=self.settings.ai_model,
                 max_output_tokens=self.settings.ai_max_output_tokens,
                 response_schema=schema,
@@ -99,10 +106,12 @@ class ContentGenerator:
         payload: GeneratePostsRequest,
         profile: WritingProfile | None = None,
         sources: list[ResearchSource] | None = None,
+        knowledge_items: list[KnowledgeItem] | None = None,
     ) -> list[AIMessage]:
         requirements = payload.model_dump()
         requirements.pop("writing_profile_id", None)
         requirements.pop("research_source_ids", None)
+        requirements.pop("knowledge_item_ids", None)
         if profile is not None:
             requirements["writing_profile"] = WritingProfileService.prompt_guidance(profile)
         if sources:
@@ -113,6 +122,15 @@ class ContentGenerator:
                     "content": source.relevant_content,
                 }
                 for source in sources
+            ]
+        if knowledge_items:
+            requirements["user_selected_knowledge"] = [
+                {
+                    "category": item.category,
+                    "title": item.title,
+                    "content": item.content,
+                }
+                for item in knowledge_items
             ]
         return [
             AIMessage(
@@ -161,6 +179,12 @@ class ContentGenerator:
         if source is None:
             raise ApplicationError("RESEARCH_SOURCE_NOT_FOUND", "Research source not found.", 404)
         return source
+
+    def _get_knowledge_item(self, user_id: UUID, item_id: UUID) -> KnowledgeItem:
+        item = self.knowledge.get_for_user(item_id, user_id)
+        if item is None:
+            raise ApplicationError("KNOWLEDGE_ITEM_NOT_FOUND", "Knowledge item not found.", 404)
+        return item
 
     @staticmethod
     def _normalize_hashtags(hashtags: list[str]) -> list[str]:

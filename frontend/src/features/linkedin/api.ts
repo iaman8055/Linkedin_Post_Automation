@@ -1,6 +1,6 @@
 import { apiRequest } from '../../services/api/client'
 
-export type LinkedInAccount = { id: string; linkedin_member_id: string; display_name: string | null; profile_image_url: string | null; token_expires_at: string | null; scopes: string; is_connected: boolean }
+export type LinkedInAccount = { id: string; workspace_id: string | null; linkedin_member_id: string; display_name: string | null; profile_image_url: string | null; token_expires_at: string | null; scopes: string; is_connected: boolean }
 export type LinkedInStatus = { accounts: LinkedInAccount[] }
 export const linkedinKeys = { status: ['linkedin', 'status'] as const }
 export const getLinkedInStatus = () => apiRequest<LinkedInStatus>('/linkedin/status')

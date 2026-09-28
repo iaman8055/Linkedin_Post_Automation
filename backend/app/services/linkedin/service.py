@@ -14,6 +14,7 @@ from app.repositories.linkedin_account import LinkedInAccountRepository
 from app.repositories.user import UserRepository
 from app.services.linkedin.client import LinkedInClient, LinkedInClientError
 from app.services.linkedin.token_cipher import TokenCipher, TokenCipherError
+from app.services.workspaces import WorkspaceService
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,9 @@ class LinkedInService:
 
     def create_authorization_url(self, user: User) -> str:
         self._require_configuration()
-        state = self._create_state(user.id)
+        workspace = WorkspaceService(self.session).active(user.id)
+        self.session.commit()
+        state = self._create_state(user.id, workspace.id)
         query = urlencode(
             {
                 "response_type": "code",
@@ -42,7 +45,7 @@ class LinkedInService:
 
     def complete_connection(self, code: str, state: str) -> LinkedInAccount:
         self._require_configuration()
-        user_id = self._decode_state(state)
+        user_id, workspace_id = self._decode_state(state)
         user = self.users.get(user_id)
         if user is None or not user.is_active:
             raise ApplicationError("LINKEDIN_OAUTH_STATE_INVALID", "Invalid OAuth state.", 400)
@@ -67,10 +70,11 @@ class LinkedInService:
                 "LINKEDIN_OAUTH_FAILED", "Unable to connect the LinkedIn account.", 502
             ) from exc
 
-        account = self.accounts.get_by_member(user_id, profile.subject)
+        account = self.accounts.get_by_member(user_id, profile.subject, workspace_id)
         if account is None:
             account = LinkedInAccount(
                 user_id=user_id,
+                workspace_id=workspace_id,
                 linkedin_member_id=profile.subject,
                 encrypted_access_token=cipher.encrypt(token.access_token),
             )
@@ -94,7 +98,8 @@ class LinkedInService:
         return account
 
     def list_accounts(self, user_id: UUID) -> list[LinkedInAccount]:
-        return self.accounts.list_for_user(user_id)
+        workspace = WorkspaceService(self.session).active(user_id)
+        return self.accounts.list_for_workspace(user_id, workspace.id)
 
     def disconnect(self, user_id: UUID, account_id: UUID) -> None:
         account = self.accounts.get_for_user(account_id, user_id)
@@ -112,7 +117,7 @@ class LinkedInService:
         )
 
     def validate_denied_state(self, state: str) -> UUID:
-        return self._decode_state(state)
+        return self._decode_state(state)[0]
 
     def _require_configuration(self) -> None:
         if not self.settings.linkedin_configured:
@@ -122,11 +127,12 @@ class LinkedInService:
                 503,
             )
 
-    def _create_state(self, user_id: UUID) -> str:
+    def _create_state(self, user_id: UUID, workspace_id: UUID) -> str:
         now = datetime.now(UTC)
         return jwt.encode(
             {
                 "sub": str(user_id),
+                "workspace_id": str(workspace_id),
                 "type": "linkedin_oauth_state",
                 "iat": now,
                 "exp": now + timedelta(minutes=self.settings.linkedin_oauth_state_expire_minutes),
@@ -138,7 +144,7 @@ class LinkedInService:
             algorithm=self.settings.jwt_algorithm,
         )
 
-    def _decode_state(self, state: str) -> UUID:
+    def _decode_state(self, state: str) -> tuple[UUID, UUID]:
         try:
             payload = jwt.decode(
                 state,
@@ -150,9 +156,8 @@ class LinkedInService:
             )
             if payload.get("type") != "linkedin_oauth_state":
                 raise ValueError("Unexpected state type")
-            return UUID(str(payload["sub"]))
+            return UUID(str(payload["sub"])), UUID(str(payload["workspace_id"]))
         except (jwt.PyJWTError, ValueError, KeyError) as exc:
             raise ApplicationError(
                 "LINKEDIN_OAUTH_STATE_INVALID", "Invalid OAuth state.", 400
             ) from exc
-

@@ -8,6 +8,7 @@ from app.schemas.analytics import (
     AnalyticsStatusResponse,
     PerformanceInsightsResponse,
     PostAnalyticsResponse,
+    SchedulingSuggestionsResponse,
 )
 from app.services.analytics import AnalyticsService
 from app.services.linkedin.client import LinkedInClient
@@ -44,6 +45,13 @@ def insights(
     user: CurrentUser, session: DatabaseSession, settings: AppSettings
 ) -> PerformanceInsightsResponse:
     return service(session, settings).performance_insights(user.id)
+
+
+@router.get("/scheduling-suggestions", response_model=SchedulingSuggestionsResponse)
+def scheduling_suggestions(
+    user: CurrentUser, session: DatabaseSession, settings: AppSettings
+) -> SchedulingSuggestionsResponse:
+    return service(session, settings).scheduling_suggestions(user.id)
 
 
 @router.post("/posts/{post_id}/refresh", response_model=PostAnalyticsResponse)
