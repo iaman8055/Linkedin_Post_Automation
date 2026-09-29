@@ -21,7 +21,7 @@ class PostRepository(UserOwnedRepository[Post]):
         offset: int = 0,
         limit: int = 20,
     ) -> tuple[list[Post], int]:
-        filters = [Post.user_id == user_id]
+        filters = self.ownership_filters(user_id)
         if status is not None:
             filters.append(Post.status == status)
         if search:
@@ -48,7 +48,7 @@ class PostRepository(UserOwnedRepository[Post]):
         offset: int = 0,
         limit: int = 20,
     ) -> tuple[list[Post], int]:
-        filters = [Post.user_id == user_id, Post.campaign_id == campaign_id]
+        filters = [*self.ownership_filters(user_id), Post.campaign_id == campaign_id]
         statement = (
             select(Post)
             .where(*filters)
@@ -67,7 +67,7 @@ class PostRepository(UserOwnedRepository[Post]):
     ) -> Post | None:
         return self.session.scalar(
             select(Post).where(
-                Post.user_id == user_id,
+                *self.ownership_filters(user_id),
                 Post.content_fingerprint == fingerprint,
                 Post.id != exclude_id,
             )

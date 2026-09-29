@@ -6,14 +6,14 @@ from uuid import UUID
 from sqlalchemy import JSON, Boolean, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, WorkspaceOwnedMixin
 
 if TYPE_CHECKING:
     from app.models.campaign import Campaign
     from app.models.user import User
 
 
-class WritingProfile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class WritingProfile(UUIDPrimaryKeyMixin, TimestampMixin, WorkspaceOwnedMixin, Base):
     __tablename__ = "writing_profiles"
 
     user_id: Mapped[UUID] = mapped_column(
@@ -33,4 +33,3 @@ class WritingProfile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     user: Mapped[User] = relationship(back_populates="writing_profiles")
     campaigns: Mapped[list[Campaign]] = relationship(back_populates="writing_profile")
-

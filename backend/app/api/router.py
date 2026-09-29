@@ -5,6 +5,7 @@ from app.api.analytics.router import router as analytics_router
 from app.api.auth.router import router as auth_router
 from app.api.campaigns.router import router as campaigns_router
 from app.api.content_plans.router import router as content_plans_router
+from app.api.copilot.router import router as copilot_router
 from app.api.creator_progress.router import router as creator_progress_router
 from app.api.engagement.router import router as engagement_router
 from app.api.health.router import router as health_router
@@ -30,6 +31,7 @@ api_router.include_router(posts_router, tags=["posts"])
 api_router.include_router(campaigns_router, tags=["campaigns"])
 api_router.include_router(ideas_router, tags=["ideas"])
 api_router.include_router(content_plans_router, tags=["content-plans"])
+api_router.include_router(copilot_router, tags=["copilot"])
 api_router.include_router(creator_progress_router, tags=["creator-progress"])
 api_router.include_router(engagement_router, tags=["engagement"])
 api_router.include_router(knowledge_router, tags=["knowledge"])

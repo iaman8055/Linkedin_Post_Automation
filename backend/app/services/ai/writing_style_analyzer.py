@@ -2,12 +2,13 @@ import json
 from uuid import UUID
 
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.errors import ApplicationError
 from app.models.post import Post
+from app.repositories.post import PostRepository
 from app.schemas.writing_profile import (
     AnalyzeWritingStyleRequest,
     AnalyzeWritingStyleResponse,
@@ -31,11 +32,18 @@ class WritingStyleAnalyzer:
         self.session = session
         self.settings = settings
         self.execution = AIExecutionService(session, settings, registry)
+        self.posts = PostRepository(session)
 
     def analyze(
         self, user_id: UUID, payload: AnalyzeWritingStyleRequest
     ) -> AnalyzeWritingStyleResponse:
-        statement = select(Post).where(Post.user_id == user_id)
+        statement = select(Post).where(
+            Post.user_id == user_id,
+            or_(
+                Post.workspace_id == self.posts.active_workspace_id(user_id),
+                Post.workspace_id.is_(None),
+            ),
+        )
         if payload.post_ids:
             statement = statement.where(Post.id.in_(payload.post_ids))
         statement = statement.order_by(Post.created_at.desc()).limit(30)

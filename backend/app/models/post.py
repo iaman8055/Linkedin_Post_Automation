@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, WorkspaceOwnedMixin
 from app.models.enums import PostStatus
 
 if TYPE_CHECKING:
@@ -21,10 +21,11 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Post(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Post(UUIDPrimaryKeyMixin, TimestampMixin, WorkspaceOwnedMixin, Base):
     __tablename__ = "posts"
     __table_args__ = (
         Index("ix_posts_user_status_created", "user_id", "status", "created_at"),
+        Index("ix_posts_workspace_status_created", "workspace_id", "status", "created_at"),
         Index("ix_posts_user_campaign", "user_id", "campaign_id"),
     )
 
@@ -68,4 +69,3 @@ class Post(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     research_source_links: Mapped[list[PostResearchSource]] = relationship(
         back_populates="post", cascade="all, delete-orphan"
     )
-

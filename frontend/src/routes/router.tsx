@@ -19,6 +19,7 @@ import { NotificationsPage } from '../features/notifications/pages/Notifications
 import { ContentStudioPage } from '../features/studio/pages/ContentStudioPage'
 import { KnowledgePage } from '../features/knowledge/pages/KnowledgePage'
 import { EngagementLabPage } from '../features/engagement/pages/EngagementLabPage'
+import { SearchPage } from '../features/search/pages/SearchPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <AuthPage mode="login"/> },
@@ -34,6 +35,8 @@ export const router = createBrowserRouter([
     { path: 'studio', element: <ContentStudioPage/> },
     { path: 'knowledge', element: <KnowledgePage/> },
     { path: 'engagement', element: <EngagementLabPage/> },
+    { path: 'search', element: <SearchPage/> },
+    { path: 'copilot', lazy: async () => ({ Component: (await import('../features/copilot/pages/CopilotPage')).CopilotPage }) },
     { path: 'analytics', element: <AnalyticsPage/> },
     { path: 'insights', element: <AnalyticsPage/> },
     { path: 'notifications', element: <NotificationsPage/> },

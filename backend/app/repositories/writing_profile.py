@@ -12,7 +12,7 @@ class WritingProfileRepository(UserOwnedRepository[WritingProfile]):
         super().__init__(WritingProfile, session)
 
     def list_with_total(self, user_id: UUID) -> tuple[list[WritingProfile], int]:
-        filters = (WritingProfile.user_id == user_id,)
+        filters = tuple(self.ownership_filters(user_id))
         total = self.session.scalar(
             select(func.count()).select_from(WritingProfile).where(*filters)
         ) or 0
@@ -22,7 +22,7 @@ class WritingProfileRepository(UserOwnedRepository[WritingProfile]):
         return list(self.session.scalars(statement)), total
 
     def clear_default(self, user_id: UUID, *, except_id: UUID | None = None) -> None:
-        statement = update(WritingProfile).where(WritingProfile.user_id == user_id)
+        statement = update(WritingProfile).where(*self.ownership_filters(user_id))
         if except_id is not None:
             statement = statement.where(WritingProfile.id != except_id)
         self.session.execute(statement.values(is_default=False))

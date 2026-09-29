@@ -12,7 +12,7 @@ class KnowledgeItemRepository(UserOwnedRepository[KnowledgeItem]):
         super().__init__(KnowledgeItem, session)
 
     def list_with_total(self, user_id: UUID) -> tuple[list[KnowledgeItem], int]:
-        filters = (KnowledgeItem.user_id == user_id,)
+        filters = tuple(self.ownership_filters(user_id))
         statement = select(KnowledgeItem).where(*filters).order_by(
             KnowledgeItem.updated_at.desc()
         )

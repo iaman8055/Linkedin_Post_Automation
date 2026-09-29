@@ -12,7 +12,7 @@ class ContentIdeaRepository(UserOwnedRepository[ContentIdea]):
         super().__init__(ContentIdea, session)
 
     def list_recent(self, user_id: UUID, *, limit: int = 50) -> tuple[list[ContentIdea], int]:
-        filters = [ContentIdea.user_id == user_id]
+        filters = self.ownership_filters(user_id)
         statement = (
             select(ContentIdea).where(*filters)
             .order_by(ContentIdea.created_at.desc()).limit(limit)

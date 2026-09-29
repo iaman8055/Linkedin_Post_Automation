@@ -21,7 +21,7 @@ class TemplateRepository(UserOwnedRepository[Template]):
         offset: int,
         limit: int,
     ) -> tuple[list[Template], int]:
-        filters = [Template.user_id == user_id]
+        filters = self.ownership_filters(user_id)
         if status is not None:
             filters.append(Template.status == status)
         if search:

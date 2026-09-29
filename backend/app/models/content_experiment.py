@@ -3,11 +3,11 @@ from uuid import UUID
 from sqlalchemy import ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, WorkspaceOwnedMixin
 from app.models.post import Post
 
 
-class ContentExperiment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class ContentExperiment(UUIDPrimaryKeyMixin, TimestampMixin, WorkspaceOwnedMixin, Base):
     __tablename__ = "content_experiments"
 
     user_id: Mapped[UUID] = mapped_column(

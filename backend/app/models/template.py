@@ -4,11 +4,11 @@ from uuid import UUID
 from sqlalchemy import JSON, Enum, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, WorkspaceOwnedMixin
 from app.models.enums import TemplateStatus
 
 
-class Template(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Template(UUIDPrimaryKeyMixin, TimestampMixin, WorkspaceOwnedMixin, Base):
     __tablename__ = "templates"
 
     user_id: Mapped[UUID] = mapped_column(
@@ -25,4 +25,3 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         index=True,
         nullable=False,
     )
-

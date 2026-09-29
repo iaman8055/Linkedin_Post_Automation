@@ -10,6 +10,7 @@ from app.models.enums import PostStatus
 from app.models.knowledge_item import KnowledgeItem
 from app.models.post import Post
 from app.models.template import Template
+from app.repositories.post import PostRepository
 from app.schemas.search import GlobalSearchFilters, GlobalSearchResponse, GlobalSearchResult
 
 
@@ -37,8 +38,13 @@ class GlobalSearchService:
             query=filters.query.strip() if filters.query else None,
         )
 
+    def _workspace_id(self, user_id: UUID) -> UUID:
+        return PostRepository(self.session).active_workspace_id(user_id)
+
     def _posts(self, user_id: UUID, filters: GlobalSearchFilters) -> list[GlobalSearchResult]:
-        conditions = [Post.user_id == user_id]
+        conditions = [Post.user_id == user_id, or_(
+            Post.workspace_id == self._workspace_id(user_id), Post.workspace_id.is_(None)
+        )]
         self._dates(conditions, Post.created_at, filters)
         if filters.query:
             pattern = f"%{filters.query.strip()}%"
@@ -65,7 +71,11 @@ class GlobalSearchService:
         return results
 
     def _ideas(self, user_id: UUID, filters: GlobalSearchFilters) -> list[GlobalSearchResult]:
-        conditions = [ContentIdea.user_id == user_id]
+        conditions = [
+            ContentIdea.user_id == user_id,
+            or_(ContentIdea.workspace_id == self._workspace_id(user_id),
+                ContentIdea.workspace_id.is_(None)),
+        ]
         self._dates(conditions, ContentIdea.created_at, filters)
         if filters.query:
             pattern = f"%{filters.query.strip()}%"
@@ -88,7 +98,11 @@ class GlobalSearchService:
     def _knowledge(
         self, user_id: UUID, filters: GlobalSearchFilters
     ) -> list[GlobalSearchResult]:
-        conditions = [KnowledgeItem.user_id == user_id]
+        conditions = [
+            KnowledgeItem.user_id == user_id,
+            or_(KnowledgeItem.workspace_id == self._workspace_id(user_id),
+                KnowledgeItem.workspace_id.is_(None)),
+        ]
         self._dates(conditions, KnowledgeItem.created_at, filters)
         if filters.query:
             pattern = f"%{filters.query.strip()}%"
@@ -115,7 +129,11 @@ class GlobalSearchService:
     def _templates(
         self, user_id: UUID, filters: GlobalSearchFilters
     ) -> list[GlobalSearchResult]:
-        conditions = [Template.user_id == user_id]
+        conditions = [
+            Template.user_id == user_id,
+            or_(Template.workspace_id == self._workspace_id(user_id),
+                Template.workspace_id.is_(None)),
+        ]
         self._dates(conditions, Template.created_at, filters)
         if filters.query:
             pattern = f"%{filters.query.strip()}%"

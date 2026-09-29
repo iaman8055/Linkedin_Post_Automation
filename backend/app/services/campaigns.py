@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApplicationError
@@ -144,7 +144,11 @@ class CampaignService:
         if profile_id is None:
             return
         statement = select(WritingProfile.id).where(
-            WritingProfile.id == profile_id, WritingProfile.user_id == user_id
+            WritingProfile.id == profile_id, WritingProfile.user_id == user_id,
+            or_(
+                WritingProfile.workspace_id == self.campaigns.active_workspace_id(user_id),
+                WritingProfile.workspace_id.is_(None),
+            ),
         )
         if self.session.scalar(statement) is None:
             raise ApplicationError("WRITING_PROFILE_NOT_FOUND", "Writing profile not found.", 404)

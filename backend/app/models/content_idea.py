@@ -3,11 +3,11 @@ from uuid import UUID
 from sqlalchemy import Enum, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, WorkspaceOwnedMixin
 from app.models.enums import IdeaStatus
 
 
-class ContentIdea(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class ContentIdea(UUIDPrimaryKeyMixin, TimestampMixin, WorkspaceOwnedMixin, Base):
     __tablename__ = "content_ideas"
 
     user_id: Mapped[UUID] = mapped_column(

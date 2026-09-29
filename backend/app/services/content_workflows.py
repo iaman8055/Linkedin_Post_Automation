@@ -149,7 +149,8 @@ class ContentWorkflowService:
                 "AI_OUTPUT_COUNT_MISMATCH", "The AI returned an unexpected plan size.", 502
             )
         plan = ContentPlan(
-            user_id=user_id, name=payload.name, audience=payload.audience,
+            user_id=user_id, workspace_id=self.plans.active_workspace_id(user_id),
+            name=payload.name, audience=payload.audience,
             timezone=payload.timezone, status=ContentPlanStatus.DRAFT,
         )
         self.session.add(plan)

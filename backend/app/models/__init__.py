@@ -11,6 +11,7 @@ from app.models.campaign import Campaign
 from app.models.content_experiment import ContentExperiment
 from app.models.content_idea import ContentIdea
 from app.models.content_plan import ContentPlan, ContentPlanItem
+from app.models.copilot import AICopilotAction, AICopilotConversation, AICopilotMessage
 from app.models.creator_progress import Achievement, CreatorGoal
 from app.models.hashtag import Hashtag, PostHashtag
 from app.models.knowledge_item import KnowledgeItem
@@ -34,6 +35,9 @@ __all__ = [
     "AuthToken",
     "Base",
     "Campaign",
+    "AICopilotAction",
+    "AICopilotConversation",
+    "AICopilotMessage",
     "ContentIdea",
     "ContentExperiment",
     "ContentPlan",

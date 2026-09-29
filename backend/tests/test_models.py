@@ -10,6 +10,9 @@ from app.models.enums import ApprovalMode, CampaignStatus, PostStatus
 def test_initial_schema_registers_expected_tables() -> None:
     expected_tables = {
         "ai_jobs",
+        "ai_copilot_actions",
+        "ai_copilot_conversations",
+        "ai_copilot_messages",
         "audit_logs",
         "auth_tokens",
         "campaigns",

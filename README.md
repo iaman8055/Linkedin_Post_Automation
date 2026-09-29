@@ -29,6 +29,14 @@ publishing, research, quality checks, media, and permission-gated LinkedIn analy
   draft creation from rendered content
 - Personal writing profiles with default-profile management and optional AI-generation guidance for
   tone, sentence style, language, emoji use, paragraph length, technical depth, CTAs, and vocabulary
+- Authenticated global search across posts, content ideas, templates, and private knowledge with
+  entity, status, topic, tag, and date filters
+- Active-workspace ownership for posts, campaigns, ideas, plans, experiments, knowledge, templates,
+  and writing profiles, including backward-compatible default-workspace migration
+- Controlled Copilot tool allowlist with strict schemas, active-workspace reads, audited execution,
+  confirmation-gated writes, and no AI publishing capability
+- Persistent AI Copilot conversations with evidence, user-controlled context sources, workspace
+  isolation, and expiring single-use draft confirmations
 - Provider-neutral research with a real Tavily adapter, freshness filters, attributable source storage,
   a saved-source library, provider summaries, and source-grounded AI draft creation
 - Non-destructive quality checks for repetition, hashtags, emoji use, formatting, length, duplicates,

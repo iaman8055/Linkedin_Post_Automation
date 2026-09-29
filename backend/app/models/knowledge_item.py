@@ -3,10 +3,10 @@ from uuid import UUID
 from sqlalchemy import JSON, Boolean, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, WorkspaceOwnedMixin
 
 
-class KnowledgeItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class KnowledgeItem(UUIDPrimaryKeyMixin, TimestampMixin, WorkspaceOwnedMixin, Base):
     __tablename__ = "knowledge_items"
 
     user_id: Mapped[UUID] = mapped_column(

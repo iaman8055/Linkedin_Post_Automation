@@ -20,7 +20,7 @@ class CampaignRepository(UserOwnedRepository[Campaign]):
         offset: int,
         limit: int,
     ) -> tuple[list[Campaign], int]:
-        filters = [Campaign.user_id == user_id]
+        filters = self.ownership_filters(user_id)
         if status is not None:
             filters.append(Campaign.status == status)
         statement = (
@@ -39,6 +39,6 @@ class CampaignRepository(UserOwnedRepository[Campaign]):
             select(Campaign)
             .options(selectinload(Campaign.posts))
             .execution_options(populate_existing=True)
-            .where(Campaign.id == campaign_id, Campaign.user_id == user_id)
+            .where(Campaign.id == campaign_id, *self.ownership_filters(user_id))
         )
         return self.session.scalar(statement)

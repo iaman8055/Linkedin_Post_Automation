@@ -23,7 +23,7 @@ def test_initial_migration_upgrades_and_downgrades(
     command.upgrade(config, "head")
     engine = create_engine(database_url)
     tables = set(inspect(engine).get_table_names())
-    assert len(tables) == 28
+    assert len(tables) == 31
     assert {
         "alembic_version", "auth_tokens", "users", "posts",
         "content_plans", "content_plan_items",

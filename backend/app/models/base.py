@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, MetaData, Uuid
+from sqlalchemy import DateTime, ForeignKey, MetaData, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 NAMING_CONVENTION = {
@@ -33,3 +33,10 @@ class TimestampMixin:
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
     )
 
+
+class WorkspaceOwnedMixin:
+    """Workspace ownership during the backward-compatible migration stage."""
+
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )

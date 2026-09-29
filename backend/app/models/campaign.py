@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import JSON, Enum, ForeignKey, Integer, String, Text, Time, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, WorkspaceOwnedMixin
 from app.models.enums import ApprovalMode, CampaignStatus
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from app.models.writing_profile import WritingProfile
 
 
-class Campaign(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Campaign(UUIDPrimaryKeyMixin, TimestampMixin, WorkspaceOwnedMixin, Base):
     __tablename__ = "campaigns"
 
     user_id: Mapped[UUID] = mapped_column(
@@ -47,4 +47,3 @@ class Campaign(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     user: Mapped[User] = relationship(back_populates="campaigns")
     writing_profile: Mapped[WritingProfile | None] = relationship(back_populates="campaigns")
     posts: Mapped[list[Post]] = relationship(back_populates="campaign")
-

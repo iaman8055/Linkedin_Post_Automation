@@ -13,7 +13,7 @@ class ContentExperimentRepository(UserOwnedRepository[ContentExperiment]):
 
     def list_for_user_with_posts(self, user_id: UUID) -> list[ContentExperiment]:
         return list(self.session.scalars(
-            select(ContentExperiment).where(ContentExperiment.user_id == user_id)
+            select(ContentExperiment).where(*self.ownership_filters(user_id))
             .options(
                 selectinload(ContentExperiment.version_a),
                 selectinload(ContentExperiment.version_b),
