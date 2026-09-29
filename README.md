@@ -128,6 +128,12 @@ Compose starts dedicated publishing and AI workers, a shared background worker f
 and Celery Beat. See [docs/background-workers.md](docs/background-workers.md) for responsibilities and
 individual development commands.
 
+## Vercel deployment
+
+Use Vercel for the Vite frontend and a container host for FastAPI and the continuously running Celery
+processes. See [docs/deployment-vercel.md](docs/deployment-vercel.md). The full application should not
+be placed exclusively in Vercel Functions because scheduled publishing depends on persistent workers.
+
 ## Database migrations
 
 From the `backend` directory, apply the current schema with:
