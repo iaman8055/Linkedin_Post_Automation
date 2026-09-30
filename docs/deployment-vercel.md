@@ -102,6 +102,29 @@ Set `LINKEDIN_REDIRECT_URI` to that exact URL. LinkedIn requires an exact match.
 
 Do not deploy `.env`, service-role keys, LinkedIn secrets, NVIDIA keys, or storage secret keys to the
 frontend project.
+
+## 6. Oracle worker using Upstash Redis
+
+`compose.oracle-worker.yaml` is the worker-only production Compose file. It has no local Redis
+service: Celery connects exclusively to the `REDIS_URL` in the server's `.env` file. Use the exact
+TLS `rediss://` endpoint supplied by Upstash.
+
+On a 1 GB Oracle Always Free Micro instance, start only the scheduler and publishing worker:
+
+```text
+docker compose -f compose.oracle-worker.yaml up -d --build scheduler worker-publishing
+```
+
+The publishing worker also consumes the `default` queue so routine token cleanup tasks do not
+accumulate. Start `worker-ai` and `worker-background` only on an instance with enough memory, such
+as an Always Free Ampere A1 Flex instance.
+
+Check their health with:
+
+```text
+docker compose -f compose.oracle-worker.yaml ps
+docker compose -f compose.oracle-worker.yaml logs -f scheduler worker-publishing
+```
 # Vercel configuration
 
 When the Vercel project root is this repository, Vercel uses the root `vercel.json`.

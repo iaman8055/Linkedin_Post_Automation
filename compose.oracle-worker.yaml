@@ -1,0 +1,31 @@
+# Run this file on Oracle Cloud when Upstash is the managed Redis broker.
+# It deliberately does not define a local Redis, API, database, or frontend service.
+# Keep the server-side .env file beside this compose file; never commit it.
+services:
+  worker-publishing:
+    build:
+      context: ./backend
+    env_file: .env
+    restart: unless-stopped
+    command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=publishing,default", "--concurrency=1", "--hostname=publishing@%h"]
+
+  worker-ai:
+    build:
+      context: ./backend
+    env_file: .env
+    restart: unless-stopped
+    command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=ai", "--concurrency=1", "--hostname=ai@%h"]
+
+  worker-background:
+    build:
+      context: ./backend
+    env_file: .env
+    restart: unless-stopped
+    command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=research,analytics,notifications", "--concurrency=1", "--hostname=background@%h"]
+
+  scheduler:
+    build:
+      context: ./backend
+    env_file: .env
+    restart: unless-stopped
+    command: ["uv", "run", "celery", "-A", "workers.celery_app:celery_app", "beat", "--loglevel=INFO", "--schedule=/tmp/celerybeat-schedule"]
